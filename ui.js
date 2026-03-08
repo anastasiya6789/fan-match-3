@@ -71,6 +71,8 @@ function handleTouchClick(element, handler) {
 }
 
 export function initUIListeners() {
+  console.log('🎯 Инициализация UI слушателей');
+  
   // Бустеры
   document.querySelectorAll('.booster-item').forEach(item => {
     handleTouchClick(item, (event) => {
@@ -168,13 +170,6 @@ export function initUIListeners() {
       console.log('🔄 Нажата кнопка рестарта');
       if (typeof window.handleRestart === 'function') {
         window.handleRestart(true);
-      } else {
-        // Если функция не глобальная, импортируем из script.js
-        import('./script.js').then(module => {
-          if (module.handleRestart) {
-            module.handleRestart(true);
-          }
-        });
       }
     });
   }
@@ -186,7 +181,6 @@ export function initUIListeners() {
       e.preventDefault();
       console.log('🚪 Выход из игры');
       
-      // Очищаем интервалы
       if (gameState.timerInterval) {
         clearInterval(gameState.timerInterval);
       }
@@ -194,37 +188,15 @@ export function initUIListeners() {
         clearInterval(window.autoSaveInterval);
       }
       
-      // Выходим из аккаунта
       const { auth } = await import('./supabase.js');
       await auth.signOut();
       
-      // Показываем экран логина
       document.getElementById('game-screen').style.display = 'none';
       document.getElementById('login-screen').style.display = 'block';
       
-      // Очищаем поля
       document.getElementById('email').value = '';
       document.getElementById('password').value = '';
       document.getElementById('login-error').textContent = '';
-    });
-  }
-
-  // Кнопки в модалке победы
-  const nextBtn = document.getElementById('next-level-btn');
-  if (nextBtn) {
-    handleTouchClick(nextBtn, async (e) => {
-      e.preventDefault();
-      console.log('🎯 Следующий уровень');
-      // Логика следующего уровня
-    });
-  }
-
-  const restartWinBtn = document.getElementById('restart-win-btn');
-  if (restartWinBtn) {
-    handleTouchClick(restartWinBtn, (e) => {
-      e.preventDefault();
-      console.log('🔄 Заново в модалке');
-      // Логика рестарта
     });
   }
 
@@ -267,11 +239,15 @@ export function initUIListeners() {
     }
   });
 
-  // Закрытие модалок при клике вне их области
+  // Закрытие модалок при клике вне их области + скролл
   const modals = ['shop-modal', 'leaderboard-modal', 'piggy-modal', 'win-modal', 'modal'];
   modals.forEach(modalId => {
     const modal = document.getElementById(modalId);
     if (modal) {
+      // Разрешаем скролл внутри модалки
+      modal.style.overflowY = 'auto';
+      modal.style.webkitOverflowScrolling = 'touch';
+      
       modal.addEventListener('click', (e) => {
         if (e.target === modal) {
           modal.style.display = 'none';

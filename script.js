@@ -9,22 +9,29 @@ import { updateProgressDisplay } from './game/levelGoals.js';
 
 // Глобальная функция для предотвращения проблем с касаниями
 function setupMobileHandlers() {
-  // Отключаем стандартное поведение браузера для всех интерактивных элементов
+  // Разрешаем скролл, но предотвращаем zoom только на кнопках
   document.addEventListener('touchstart', (e) => {
-    // Разрешаем скролл, но предотвращаем zoom на интерактивных элементах
-    if (e.target.closest('.modal') || 
-        e.target.closest('.booster-item') || 
+    // Проверяем, является ли элемент кнопкой или внутри модалки
+    if (e.target.closest('.booster-item') || 
         e.target.closest('.sidebar-btn') ||
         e.target.closest('.buy-btn') ||
         e.target.closest('.piggy-amount') ||
         e.target.closest('#restart-btn') ||
         e.target.closest('#logout-btn')) {
+      // Для кнопок предотвращаем зум
       e.preventDefault();
     }
+    // Для модалок и остальных элементов разрешаем стандартное поведение
   }, { passive: false });
   
-  // Исправляем проблему с :active на мобильных
-  document.addEventListener('touchstart', function(){}, {passive: true});
+  // Добавляем обработчик для скролла в модалках
+  setTimeout(() => {
+    document.querySelectorAll('.modal').forEach(modal => {
+      modal.addEventListener('touchmove', (e) => {
+        e.stopPropagation(); // Позволяем скролл внутри модалки
+      }, { passive: true });
+    });
+  }, 1000);
 }
 
 // Вызываем при загрузке
@@ -80,7 +87,7 @@ window._isRestarting = false;
 window._restartTimeout = null;
 window._currentPhaserGame = null;
 window._resizeTimeout = null;
-window._lastContainerSize = { width: 0, height: 0 }; // Для отслеживания реальных изменений
+window._lastContainerSize = { width: 0, height: 0 };
 
 // Вспомогательная функция для обновления текста цели
 async function updateGoalText() {
@@ -176,7 +183,6 @@ async function showGameScreen(user) {
   const container = document.getElementById('phaser-container');
   container.innerHTML = '';
   
-  // Даем время DOM обновиться
   setTimeout(() => {
     startPhaser();
   }, 100);
@@ -332,6 +338,9 @@ function handleRestart(resetFromDB = true) {
   }, 2000);
 }
 
+// Делаем функцию глобальной для доступа из ui.js
+window.handleRestart = handleRestart;
+
 // Модалка победы
 function setupWinModalListeners() {
   const winModal = document.getElementById('win-modal');
@@ -412,7 +421,7 @@ function setupWinModalListeners() {
   };
 }
 
-// Запуск Phaser с правильным масштабированием
+// Запуск Phaser
 function startPhaser() {
   console.log('🎮 ===== ЗАПУСК PHASER =====');
   
@@ -422,18 +431,10 @@ function startPhaser() {
     return;
   }
   
-  // Получаем реальные размеры контейнера
   const containerRect = container.getBoundingClientRect();
   const containerWidth = containerRect.width;
   const containerHeight = containerRect.height;
   
-  console.log('📊 Размеры контейнера:', {
-    width: containerWidth,
-    height: containerHeight,
-    rect: containerRect
-  });
-  
-  // Проверяем, что контейнер имеет размеры
   if (containerWidth === 0 || containerHeight === 0) {
     console.warn('⚠️ Контейнер имеет нулевые размеры, ждем...');
     setTimeout(() => startPhaser(), 100);
@@ -442,8 +443,6 @@ function startPhaser() {
   
   const gridSize = gameState.GRID_SIZE;
   const basePadding = 8;
-  
-  // Рассчитываем размер гема так, чтобы сетка заполняла контейнер по ширине
   const availableHeight = containerHeight - 40;
   
   const gemSizeByWidth = Math.floor((containerWidth - basePadding * (gridSize - 1)) / gridSize);
@@ -498,7 +497,7 @@ function startPhaser() {
   }, 100);
 }
 
-// Обработчик изменения размера окна - БЕЗ ПЕРЕЗАПУСКА ИГРЫ
+// Обработчик изменения размера окна
 window.addEventListener('resize', () => {
   console.log('📱 Изменение размера окна');
   
@@ -524,16 +523,6 @@ window.addEventListener('resize', () => {
         if (canvas) {
           canvas.style.width = '100%';
           canvas.style.height = '100%';
-        }
-        
-        // Обновляем размеры для будущих созданий
-        const gemSizeByWidth = Math.floor((newWidth - 8 * (gameState.GRID_SIZE - 1)) / gameState.GRID_SIZE);
-        let newGemSize = Math.min(gemSizeByWidth, 80);
-        newGemSize = Math.max(newGemSize, 35);
-        
-        if (Math.abs(newGemSize - gameState.GEM_SIZE) > 15) {
-          gameState.GEM_SIZE = newGemSize;
-          gameState.GRID_PADDING = Math.max(4, Math.floor(8 * (newGemSize / 80)));
         }
       }
     }

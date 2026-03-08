@@ -897,3 +897,29 @@ button,
   position: relative;
   z-index: 10001;
 }
+/* Убеждаемся что модалки могут скроллиться */
+.modal {
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+.shop-items {
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+.leaderboard-list {
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+/* Магазин - вертикальный */
+.shop-items {
+  flex-direction: column !important;
+  align-items: center !important;
+}
+
+.shop-item {
+  width: 100% !important;
+  max-width: 280px !important;
+}
