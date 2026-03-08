@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Fan Match-3</title>
+  
+  <script type="module" src="supabase.js"></script>
+  <script type="module" src="script.js"></script>
+  <link rel="stylesheet" href="style.css">
+  
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.0/dist/phaser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+  <!-- Экран логина -->
+  <div id="login-screen" class="login-screen">
+    <div class="login-container">
+      <h1>Вход в Fan Match-3</h1>
+      <input type="email" id="email" placeholder="Email" />
+      <input type="password" id="password" placeholder="Пароль" />
+      <div class="login-buttons">
+        <button id="login-btn">Войти</button>
+        <button id="signup-btn">Регистрация</button>
+      </div>
+      <p id="login-error" style="color: #ff6b6b;"></p>
+    </div>
+  </div>
+
+  <!-- Экран игры -->
+  <div id="game-screen" class="game-screen" style="display: none;">
+    <div class="game-layout">
+      
+      <!-- Левая колонка: три квадратные кнопки -->
+      <div class="sidebar-left">
+        <div class="sidebar-icon">
+          <button id="leaderboard-btn" class="sidebar-btn" title="Рейтинг друзей">
+            <img src="assets/rating-icon.png" alt="Рейтинг">
+          </button>
+          <p>Рейтинг</p>
+        </div>
+
+        <div class="sidebar-icon">
+          <button id="piggy-btn" class="sidebar-btn" title="Общая копилка">
+            <img src="assets/piggy-icon.png" alt="Копилка">
+          </button>
+          <p>Копилка</p>
+        </div>
+
+        <div class="sidebar-icon">
+          <button id="shop-btn" class="sidebar-btn" title="Магазин бустеров">
+            <img src="assets/shop-icon.png" alt="Магазин">
+          </button>
+          <p>Магазин</p>
+        </div>
+      </div>
+
+      <!-- Основная часть -->
+      <div class="main-content">
+        <!-- Sidebar с инфой -->
+        <div id="sidebar" class="game-sidebar">
+          <h2>Уровень <span id="level">1</span></h2>
+          <p class="goal-text">Цель: <span id="goal-text">Набери 500 очков</span></p>
+          
+          <div class="stats-grid">
+            <p>Очки: <span id="score">0</span></p>
+            <p>Шаги: <span id="moves">30</span></p>
+            <p>Монетки: <span id="coins">10000</span></p>
+            <p>Время: <span id="timer">0</span> сек</p>
+          </div>
+
+          <!-- Прогресс бар -->
+          <div id="progress-container" class="progress-container" style="display: none;">
+            <p>Прогресс: <span id="progress-current">0</span> / <span id="progress-target">0</span></p>
+            <progress id="progress-bar" value="0" max="100"></progress>
+          </div>
+
+          <!-- Бустеры -->
+          <div class="boosters-grid">
+            <div class="booster-item" data-booster="bomb" title="Бомба: 3×3">
+              <img src="assets/bomb-icon.png" alt="Бомба">
+              <span id="bomb-count" class="booster-count">0</span>
+            </div>
+            <div class="booster-item" data-booster="shuffle" title="Перемешать">
+              <img src="assets/shuffle-icon.png" alt="Shuffle">
+              <span id="shuffle-count" class="booster-count">0</span>
+            </div>
+            <div class="booster-item" data-booster="extramoves" title="+5 шагов">
+              <img src="assets/extramoves-icon.png" alt="+5 шагов">
+              <span id="extramoves-count" class="booster-count">0</span>
+            </div>
+            <div class="booster-item" data-booster="52" title="52: 5×2">
+              <img src="assets/52-icon.png" alt="52">
+              <span id="52-count" class="booster-count">0</span>
+            </div>
+          </div>
+
+          <!-- Кнопки управления -->
+          <div class="action-buttons">
+            <button id="restart-btn" class="restart-btn">Заново</button>
+            <button id="logout-btn" class="logout-btn">Выйти</button>
+          </div>
+        </div>
+
+        <!-- Игровое поле -->
+        <div id="phaser-container" class="game-container"></div>
+      </div>
+    </div>
+
+    <!-- Модалка победы -->
+    <div id="win-modal" class="modal win-modal">
+      <h1>Уровень пройден!</h1>
+      <p>Время: <span id="win-time">0</span> сек</p>
+      <p>Осталось шагов: <span id="win-moves">0</span></p>
+      <p>Очки: <span id="win-score">0</span></p>
+      <p class="reward-text">+1000 монеток!</p>
+      <div class="modal-buttons">
+        <button id="next-level-btn" class="modal-btn next-btn">Следующий уровень</button>
+        <button id="restart-win-btn" class="modal-btn restart-btn">Заново</button>
+      </div>
+    </div>
+
+    <!-- Модалка 0 шагов -->
+    <div id="modal" class="modal gameover-modal">
+      <h2>Шаги кончились!</h2>
+      <div class="modal-buttons">
+        <button id="add-moves" class="modal-btn add-moves-btn">+10 шагов бесплатно</button>
+        <button id="restart-modal" class="modal-btn restart-btn">Заново</button>
+      </div>
+    </div>
+
+    <!-- Модалка рейтинга -->
+    <div id="leaderboard-modal" class="modal leaderboard-modal">
+      <h1>Рейтинг друзей</h1>
+      <ul id="top-list" class="leaderboard-list"></ul>
+      <button id="close-leaderboard" class="modal-btn close-btn">Закрыть</button>
+    </div>
+
+    <!-- Модалка общей копилки -->
+    <div id="piggy-modal" class="modal piggy-modal">
+      <h1>Донаты</h1>
+      
+      <p class="piggy-stats">Собрано всеми игроками:</p>
+      <p class="piggy-total"><span id="piggy-total">0</span> монеток</p>
+      
+      <p class="piggy-goal">Цель: 100 000 монеток (чтобы Лешик скинул ножки)</p>
+      
+      <progress id="piggy-bar" value="0" max="100000" class="piggy-progress"></progress>
+
+      <p class="piggy-ask">Депнешь?</p>
+      
+      <div class="piggy-amounts">
+        <button class="piggy-amount" data-amount="200">200</button>
+        <button class="piggy-amount" data-amount="500">500</button>
+        <button class="piggy-amount" data-amount="1000">1000</button>
+      </div>
+
+      <p class="piggy-custom-label">Или введи сумму:</p>
+      <input type="number" id="piggy-custom" class="piggy-custom-input" placeholder="Сумма" min="10" />
+
+      <button id="add-to-piggy" class="piggy-add-btn">Деп!</button>
+      <button id="close-piggy" class="modal-btn close-btn">Закрыть</button>
+    </div>
+
+    <!-- Модалка магазина -->
+    <div id="shop-modal" class="modal shop-modal">
+      <h1>Магазин бустеров</h1>
+      <p class="shop-coins">Монетки: <span id="shop-coins">10000</span></p>
+
+      <div class="shop-items">
+        <div class="shop-item">
+          <h3>Бомба</h3>
+          <p>Удаляет 3x3</p>
+          <p>Цена: 200</p>
+          <p>У тебя: <span id="shop-bomb-count">0</span></p>
+          <button class="buy-btn" data-booster="bomb">Купить</button>
+        </div>
+
+        <div class="shop-item">
+          <h3>Перемешать</h3>
+          <p>Shuffle сетки</p>
+          <p>Цена: 300</p>
+          <p>У тебя: <span id="shop-shuffle-count">0</span></p>
+          <button class="buy-btn" data-booster="shuffle">Купить</button>
+        </div>
+
+        <div class="shop-item">
+          <h3>+5 шагов</h3>
+          <p>Добавляет 5 ходов</p>
+          <p>Цена: 150</p>
+          <p>У тебя: <span id="shop-extramoves-count">0</span></p>
+          <button class="buy-btn" data-booster="extramoves">Купить</button>
+        </div>
+
+        <div class="shop-item">
+          <h3>52</h3>
+          <p>Удаляет 5×2 область</p>
+          <p>Цена: 500</p>
+          <p>У тебя: <span id="shop-52-count">0</span></p>
+          <button class="buy-btn" data-booster="52">Купить</button>
+        </div>
+      </div>
+
+      <button id="close-shop" class="modal-btn close-btn">Закрыть</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
