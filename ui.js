@@ -54,7 +54,7 @@ export function updateShopDisplay() {
 
 // Функция для обработки кликов на мобильных
 function handleTouchClick(element, handler) {
-  if (!element) return;
+  if (!element) return null;
   
   // Удаляем старые обработчики
   const newElement = element.cloneNode(true);
@@ -73,11 +73,11 @@ function handleTouchClick(element, handler) {
 export function initUIListeners() {
   // Бустеры
   document.querySelectorAll('.booster-item').forEach(item => {
-    const newItem = handleTouchClick(item, (event) => {
+    handleTouchClick(item, (event) => {
       event.preventDefault();
       event.stopPropagation();
       
-      const booster = newItem.dataset.booster;
+      const booster = event.currentTarget.dataset.booster;
       
       if (gameState.boosters[booster] <= 0) {
         return alert('У тебя нет этого бустера!');
@@ -89,7 +89,7 @@ export function initUIListeners() {
       }
 
       gameState.activeBooster = booster;
-      newItem.classList.add('active');
+      event.currentTarget.classList.add('active');
       
       window._lastSetBooster = booster;
       window._lastSetTime = Date.now();
@@ -103,7 +103,7 @@ export function initUIListeners() {
         document.getElementById('moves').textContent = gameState.movesLeft;
         gameState.boosters.extramoves--;
         document.getElementById('extramoves-count').textContent = gameState.boosters.extramoves;
-        newItem.classList.remove('active');
+        event.currentTarget.classList.remove('active');
         gameState.activeBooster = null;
         window._boosterCache.value = null;
       }
@@ -131,7 +131,7 @@ export function initUIListeners() {
   document.querySelectorAll('.buy-btn').forEach(btn => {
     handleTouchClick(btn, async (e) => {
       e.preventDefault();
-      const booster = btn.dataset.booster;
+      const booster = e.currentTarget.dataset.booster;
       const prices = { bomb: 200, shuffle: 300, extramoves: 150, '52': 500 };
       const price = prices[booster];
 
@@ -160,46 +160,110 @@ export function initUIListeners() {
     });
   });
 
-  // Кнопка рестарта
+  // Кнопка рестарта в боковой панели
   const restartBtn = document.getElementById('restart-btn');
-  handleTouchClick(restartBtn, () => {
-    console.log('🔄 Нажата кнопка рестарта');
-    handleRestart(true);
-  });
+  if (restartBtn) {
+    handleTouchClick(restartBtn, (e) => {
+      e.preventDefault();
+      console.log('🔄 Нажата кнопка рестарта');
+      if (typeof window.handleRestart === 'function') {
+        window.handleRestart(true);
+      } else {
+        // Если функция не глобальная, импортируем из script.js
+        import('./script.js').then(module => {
+          if (module.handleRestart) {
+            module.handleRestart(true);
+          }
+        });
+      }
+    });
+  }
 
   // Кнопка выхода
   const logoutBtn = document.getElementById('logout-btn');
-  handleTouchClick(logoutBtn, async () => {
-    console.log('🚪 Выход из игры');
-    // ... логика выхода
-  });
+  if (logoutBtn) {
+    handleTouchClick(logoutBtn, async (e) => {
+      e.preventDefault();
+      console.log('🚪 Выход из игры');
+      
+      // Очищаем интервалы
+      if (gameState.timerInterval) {
+        clearInterval(gameState.timerInterval);
+      }
+      if (window.autoSaveInterval) {
+        clearInterval(window.autoSaveInterval);
+      }
+      
+      // Выходим из аккаунта
+      const { auth } = await import('./supabase.js');
+      await auth.signOut();
+      
+      // Показываем экран логина
+      document.getElementById('game-screen').style.display = 'none';
+      document.getElementById('login-screen').style.display = 'block';
+      
+      // Очищаем поля
+      document.getElementById('email').value = '';
+      document.getElementById('password').value = '';
+      document.getElementById('login-error').textContent = '';
+    });
+  }
 
   // Кнопки в модалке победы
   const nextBtn = document.getElementById('next-level-btn');
-  handleTouchClick(nextBtn, async () => {
-    console.log('🎯 Следующий уровень');
-    // ... логика следующего уровня
-  });
+  if (nextBtn) {
+    handleTouchClick(nextBtn, async (e) => {
+      e.preventDefault();
+      console.log('🎯 Следующий уровень');
+      // Логика следующего уровня
+    });
+  }
 
   const restartWinBtn = document.getElementById('restart-win-btn');
-  handleTouchClick(restartWinBtn, () => {
-    console.log('🔄 Заново в модалке');
-    // ... логика рестарта
-  });
+  if (restartWinBtn) {
+    handleTouchClick(restartWinBtn, (e) => {
+      e.preventDefault();
+      console.log('🔄 Заново в модалке');
+      // Логика рестарта
+    });
+  }
 
   // Кнопки в модалке 0 шагов
   const addMovesBtn = document.getElementById('add-moves');
-  handleTouchClick(addMovesBtn, () => {
-    gameState.movesLeft += 10;
-    document.getElementById('moves').textContent = gameState.movesLeft;
-    document.getElementById('modal').style.display = 'none';
-  });
+  if (addMovesBtn) {
+    handleTouchClick(addMovesBtn, (e) => {
+      e.preventDefault();
+      gameState.movesLeft += 10;
+      document.getElementById('moves').textContent = gameState.movesLeft;
+      document.getElementById('modal').style.display = 'none';
+    });
+  }
 
   const restartModalBtn = document.getElementById('restart-modal');
-  handleTouchClick(restartModalBtn, () => {
-    document.getElementById('modal').style.display = 'none';
-    if (typeof handleRestart === 'function') {
-      handleRestart(true);
+  if (restartModalBtn) {
+    handleTouchClick(restartModalBtn, (e) => {
+      e.preventDefault();
+      document.getElementById('modal').style.display = 'none';
+      if (typeof window.handleRestart === 'function') {
+        window.handleRestart(true);
+      }
+    });
+  }
+
+  // Кнопки закрытия для всех модалок
+  const closeButtons = {
+    'close-leaderboard': 'leaderboard-modal',
+    'close-piggy': 'piggy-modal',
+    'close-shop': 'shop-modal'
+  };
+
+  Object.entries(closeButtons).forEach(([btnId, modalId]) => {
+    const btn = document.getElementById(btnId);
+    if (btn) {
+      handleTouchClick(btn, (e) => {
+        e.preventDefault();
+        document.getElementById(modalId).style.display = 'none';
+      });
     }
   });
 

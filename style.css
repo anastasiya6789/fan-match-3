@@ -114,6 +114,7 @@ body {
   gap: 20px;
   width: 80px;
   flex-shrink: 0;
+  z-index: 10;
 }
 
 .sidebar-icon {
@@ -160,6 +161,7 @@ body {
   gap: 20px;
   align-items: flex-start;
   min-width: 0;
+  z-index: 10;
 }
 
 /* Game Sidebar */
@@ -173,6 +175,7 @@ body {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+  z-index: 10;
 }
 
 .game-sidebar h2 {
@@ -292,6 +295,7 @@ progress::-webkit-progress-value {
   flex-direction: column;
   gap: 8px;
   margin-top: auto;
+  z-index: 10;
 }
 
 #restart-btn, #logout-btn {
@@ -302,6 +306,8 @@ progress::-webkit-progress-value {
   border-radius: 8px;
   cursor: pointer;
   transition: opacity 0.2s;
+  position: relative;
+  z-index: 10;
 }
 
 #restart-btn:hover, #logout-btn:hover {
@@ -335,6 +341,7 @@ progress::-webkit-progress-value {
   align-items: center;
   aspect-ratio: 1 / 1;
   position: relative;
+  z-index: 10;
 }
 
 .game-container canvas {
@@ -350,7 +357,7 @@ progress::-webkit-progress-value {
   margin: auto;
 }
 
-/* Modal Styles - объединенные */
+/* Modal Styles */
 .modal {
   display: none;
   position: fixed;
@@ -369,18 +376,6 @@ progress::-webkit-progress-value {
   z-index: 10000;
   border: 2px solid;
   pointer-events: auto;
-}
-
-/* Затемнение фона */
-.modal::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0,0,0,0.5);
-  z-index: -1;
 }
 
 .modal > * {
@@ -538,7 +533,7 @@ progress::-webkit-progress-value {
   100% { background: #FFD700; transform: scale(1); }
 }
 
-/* Shop Modal */
+/* Shop Modal - вертикальное отображение по умолчанию */
 .shop-modal {
   border-color: #2196F3;
   min-width: 450px;
@@ -552,9 +547,8 @@ progress::-webkit-progress-value {
 
 .shop-items {
   display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
   gap: 15px;
   margin: 20px 0;
   max-height: 50vh;
@@ -566,8 +560,8 @@ progress::-webkit-progress-value {
   background: #444;
   padding: 15px;
   border-radius: 12px;
-  width: 180px;
-  flex-shrink: 0;
+  width: 100%;
+  max-width: 280px;
 }
 
 .shop-item h3 {
@@ -640,7 +634,7 @@ progress::-webkit-progress-value {
   margin-top: 15px;
 }
 
-/* Responsive Design - объединенные медиа-запросы */
+/* Responsive Design */
 @media (max-width: 1024px) {
   .game-layout {
     flex-direction: column;
@@ -744,19 +738,6 @@ progress::-webkit-progress-value {
     min-width: 280px;
   }
   
-  .shop-items {
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    max-height: 60vh;
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  .shop-item {
-    width: 100%;
-    max-width: 280px;
-  }
-  
   .leaderboard-modal {
     min-width: 280px;
   }
@@ -778,6 +759,7 @@ progress::-webkit-progress-value {
     gap: 8px;
   }
   
+  /* Увеличиваем область нажатия для кнопок */
   .modal-btn,
   .buy-btn,
   .close-btn,
@@ -785,25 +767,17 @@ progress::-webkit-progress-value {
   #next-level-btn,
   #restart-win-btn,
   #add-moves,
-  #restart-modal {
-    min-height: 44px;
-    min-width: 44px;
-    padding: 12px 20px;
-    font-size: 16px;
-    touch-action: manipulation;
-  }
-  
-  /* Мобильные стили для интерактивных элементов */
+  #restart-modal,
   .sidebar-btn,
   .booster-item,
-  .buy-btn,
-  .modal-btn,
   .piggy-amount,
   #add-to-piggy,
   #restart-btn,
   #logout-btn {
     min-height: 44px;
     min-width: 44px;
+    padding: 12px 20px;
+    font-size: 16px;
     touch-action: manipulation;
   }
   
@@ -905,21 +879,9 @@ progress::-webkit-progress-value {
     width: 100%;
     max-width: 180px;
   }
-  
-  .shop-item {
-    padding: 12px;
-  }
-  
-  .shop-item h3 {
-    font-size: 16px;
-  }
-  
-  .shop-item p {
-    font-size: 14px;
-  }
 }
 
-/* Кнопки должны быть кликабельны */
+/* Все кнопки должны быть кликабельны */
 button, 
 .buy-btn, 
 .modal-btn, 
@@ -928,7 +890,9 @@ button,
 #next-level-btn,
 #restart-win-btn,
 #add-moves,
-#restart-modal {
+#restart-modal,
+#restart-btn,
+#logout-btn {
   cursor: pointer;
   position: relative;
   z-index: 10001;
