@@ -1,7 +1,5 @@
-import { SUPABASE_CONFIG } from './config.js';
-
-const SUPABASE_URL = SUPABASE_CONFIG.url;
-const SUPABASE_ANON_KEY = SUPABASE_CONFIG.anonKey;
+const SUPABASE_URL = 'https://miovofajmsssdhkkpbme.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pb3ZvZmFqbXNzc2Roa2twYm1lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4MDgwNzMsImV4cCI6MjA4ODM4NDA3M30.fjehq2rTP7UXcwruK0npJRypD7yxbNA-KVPTo9MI6T0';
 
 const { createClient } = supabase;
 export const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
