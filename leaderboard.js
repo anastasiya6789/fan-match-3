@@ -9,27 +9,38 @@ const UI_ELEMENTS = {
   closeLeaderboard: 'close-leaderboard'
 };
 
-// Инициализация рейтинга (вызывается один раз)
 export function initLeaderboard() {
   const btn = document.getElementById(UI_ELEMENTS.leaderboardBtn);
   if (!btn) return;
 
-  // Удаляем предыдущие обработчики, чтобы не было дублирования
-  btn.removeEventListener('click', showLeaderboard);
-  btn.addEventListener('click', showLeaderboard);
+  // Клонируем кнопку для удаления старых обработчиков
+  const newBtn = btn.cloneNode(true);
+  btn.parentNode.replaceChild(newBtn, btn);
+  
+  const handleLeaderboardClick = (e) => {
+    e.preventDefault();
+    showLeaderboard();
+  };
+  
+  newBtn.addEventListener('click', handleLeaderboardClick);
+  newBtn.addEventListener('touchstart', handleLeaderboardClick, { passive: false });
 
   // Закрытие модалки
   const closeBtn = document.getElementById(UI_ELEMENTS.closeLeaderboard);
-  closeBtn.removeEventListener('click', closeLeaderboard);
-  closeBtn.addEventListener('click', closeLeaderboard);
+  if (closeBtn) {
+    const newCloseBtn = closeBtn.cloneNode(true);
+    closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+    
+    const handleCloseClick = (e) => {
+      e.preventDefault();
+      document.getElementById(UI_ELEMENTS.leaderboardModal).style.display = 'none';
+    };
+    
+    newCloseBtn.addEventListener('click', handleCloseClick);
+    newCloseBtn.addEventListener('touchstart', handleCloseClick, { passive: false });
+  }
 }
 
-// Функция закрытия
-function closeLeaderboard() {
-  document.getElementById(UI_ELEMENTS.leaderboardModal).style.display = 'none';
-}
-
-// Показ рейтинга
 async function showLeaderboard() {
   const modal = document.getElementById(UI_ELEMENTS.leaderboardModal);
   const list = document.getElementById(UI_ELEMENTS.topList);
@@ -39,7 +50,6 @@ async function showLeaderboard() {
 
   try {
     const topPlayers = await getTopPlayers(10);
-    
 
     list.innerHTML = '';
 
@@ -48,10 +58,8 @@ async function showLeaderboard() {
       return;
     }
 
-    // Получаем текущего пользователя (более надежный способ)
     const { data: { session } } = await auth.getSession();
     const currentUserId = session?.user?.id;
-    
 
     topPlayers.forEach((player, i) => {
       const li = document.createElement('li');
@@ -61,15 +69,12 @@ async function showLeaderboard() {
       li.style.borderRadius = '5px';
       li.style.transition = 'all 0.2s';
       
-      // ВАЖНО: Используем player.lifetime_score, а не player.score!
       const score = player.lifetime_score || 0;
       const username = player.username || 'Аноним';
       const level = player.level || 1;
       
-      // Формируем текст с правильным полем score
       let text = `<strong>#${i + 1}</strong> ${username} — ${score} очков (ур. ${level})`;
 
-      // Подсветка текущего игрока
       if (currentUserId && player.user_id === currentUserId) {
         li.style.backgroundColor = 'rgba(255, 215, 0, 0.2)';
         li.style.color = '#FFD700';
@@ -82,9 +87,8 @@ async function showLeaderboard() {
       list.appendChild(li);
     });
     
-    
   } catch (error) {
-    
+    console.error('Ошибка загрузки рейтинга:', error);
     list.innerHTML = '<li>Ошибка загрузки рейтинга</li>';
   }
 }

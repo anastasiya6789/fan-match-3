@@ -1,5 +1,5 @@
 // piggy.js
-import { gameState } from './game/index.js'; // ← ИСПРАВЛЕНО
+import { gameState } from './game/index.js';
 import { supabaseClient } from './supabase.js';
 
 const UI_ELEMENTS = {
@@ -20,44 +20,73 @@ const PIGGY_CONFIG = {
 };
 
 let sharedPiggy = 0;
-let piggyChannel = null; // для отписки при необходимости
+let piggyChannel = null;
 
 export function initPiggy() {
-  
-  
-  // Загружаем из БД
   loadPiggyFromDB();
-  
-  // Подписываемся на реальные обновления
   subscribeToPiggyChanges();
   
   // Кнопка открытия
   const piggyBtn = document.getElementById(UI_ELEMENTS.piggyBtn);
   if (piggyBtn) {
-    piggyBtn.addEventListener('click', showPiggyModal);
+    const newPiggyBtn = piggyBtn.cloneNode(true);
+    piggyBtn.parentNode.replaceChild(newPiggyBtn, piggyBtn);
+    
+    const handlePiggyClick = (e) => {
+      e.preventDefault();
+      showPiggyModal();
+    };
+    
+    newPiggyBtn.addEventListener('click', handlePiggyClick);
+    newPiggyBtn.addEventListener('touchstart', handlePiggyClick, { passive: false });
   }
   
   // Закрытие
   const closeBtn = document.getElementById(UI_ELEMENTS.closePiggy);
   if (closeBtn) {
-    closeBtn.addEventListener('click', closePiggyModal);
+    const newCloseBtn = closeBtn.cloneNode(true);
+    closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+    
+    const handleCloseClick = (e) => {
+      e.preventDefault();
+      closePiggyModal();
+    };
+    
+    newCloseBtn.addEventListener('click', handleCloseClick);
+    newCloseBtn.addEventListener('touchstart', handleCloseClick, { passive: false });
   }
   
   // Предустановленные суммы
   document.querySelectorAll('.piggy-amount').forEach(btn => {
-    btn.addEventListener('click', () => addToPiggy(parseInt(btn.dataset.amount)));
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+    
+    const handleAmountClick = (e) => {
+      e.preventDefault();
+      addToPiggy(parseInt(newBtn.dataset.amount));
+    };
+    
+    newBtn.addEventListener('click', handleAmountClick);
+    newBtn.addEventListener('touchstart', handleAmountClick, { passive: false });
   });
   
   // Кастомная сумма
   const addBtn = document.getElementById(UI_ELEMENTS.addToPiggy);
   if (addBtn) {
-    addBtn.addEventListener('click', handleCustomAdd);
+    const newAddBtn = addBtn.cloneNode(true);
+    addBtn.parentNode.replaceChild(newAddBtn, addBtn);
+    
+    const handleAddClick = (e) => {
+      e.preventDefault();
+      handleCustomAdd();
+    };
+    
+    newAddBtn.addEventListener('click', handleAddClick);
+    newAddBtn.addEventListener('touchstart', handleAddClick, { passive: false });
   }
 }
 
-// Подписка на изменения в реальном времени
 function subscribeToPiggyChanges() {
-  // Отписываемся от предыдущей подписки если есть
   if (piggyChannel) {
     supabaseClient.removeChannel(piggyChannel);
   }
@@ -73,27 +102,16 @@ function subscribeToPiggyChanges() {
         filter: 'id=eq.1'
       },
       (payload) => {
-        
         const newTotal = payload.new.total;
-        
-        // Обновляем локальное значение
         sharedPiggy = newTotal;
-        
-        // Обновляем UI если модалка открыта
         updatePiggyDisplay();
-        
-        // Можно показать уведомление
         showFloatingNotification('💰 Кто-то пополнил копилку!');
       }
     )
-    .subscribe((status) => {
-      
-    });
+    .subscribe();
 }
 
-// Показать плавающее уведомление
 function showFloatingNotification(message) {
-  // Создаем элемент уведомления
   const notification = document.createElement('div');
   notification.textContent = message;
   notification.style.cssText = `
@@ -110,7 +128,6 @@ function showFloatingNotification(message) {
     animation: slideIn 0.3s ease;
   `;
 
-  // Добавляем анимацию
   const style = document.createElement('style');
   style.textContent = `
     @keyframes slideIn {
@@ -128,7 +145,6 @@ function showFloatingNotification(message) {
 
   document.body.appendChild(notification);
 
-  // Убираем через 3 секунды
   setTimeout(() => {
     notification.style.animation = 'slideOut 0.3s ease';
     style.textContent += `
@@ -181,21 +197,15 @@ export async function addToPiggy(amount) {
     return false;
   }
 
-  // Списываем монеты
   gameState.coins -= amount;
-  
-  // Обновляем локальное значение (оптимистично)
   const newTotal = sharedPiggy + amount;
   
-  // Обновляем UI
   document.getElementById(UI_ELEMENTS.coins).textContent = gameState.coins;
 
-  // Визуальный эффект
   const addBtn = document.getElementById(UI_ELEMENTS.addToPiggy);
   addBtn.classList.add('success');
   setTimeout(() => addBtn.classList.remove('success'), 600);
 
-  // Сохраняем в БД
   try {
     const { error } = await supabaseClient
       .from('piggy_bank')
@@ -207,20 +217,16 @@ export async function addToPiggy(amount) {
     
     if (error) throw error;
     
-    // Локально обновляем только после успешного сохранения
     sharedPiggy = newTotal;
     updatePiggyDisplay();
     
-    
-    
-    // Проверяем цель
     if (sharedPiggy >= PIGGY_CONFIG.GOAL) {
       celebrateGoal();
     }
     
     return true;
   } catch (error) {
-    
+    console.error('❌ Ошибка сохранения в копилку:', error);
     alert('Ошибка при добавлении в копилку. Попробуйте еще раз.');
     return false;
   }
@@ -235,18 +241,14 @@ async function loadPiggyFromDB() {
       .maybeSingle();
     
     if (error) {
-      
       sharedPiggy = 0;
     } else if (data) {
       sharedPiggy = data.total || 0;
-      
     } else {
-      // Если нет записи, создаем
       await createPiggyRecord();
       sharedPiggy = 0;
     }
   } catch (error) {
-    
     sharedPiggy = 0;
   }
   
@@ -259,25 +261,21 @@ async function createPiggyRecord() {
     .insert({ id: 1, total: 0 });
   
   if (error) {
-    
+    console.error('❌ Ошибка создания записи копилки:', error);
   }
 }
 
-// Функция для ручного обновления (если нужно)
 export function refreshPiggy() {
   loadPiggyFromDB();
 }
 
-// Отписка от realtime (вызвать при выходе из игры)
 export function unsubscribeFromPiggy() {
   if (piggyChannel) {
     supabaseClient.removeChannel(piggyChannel);
     piggyChannel = null;
-    
   }
 }
 
 function celebrateGoal() {
   alert('🎉 Поздравляем! Лешик скинет ножки!');
-  // Здесь можно добавить логику разблокировки нового уровня
 }

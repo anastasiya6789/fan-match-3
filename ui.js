@@ -53,20 +53,18 @@ export function updateShopDisplay() {
 }
 
 export function initUIListeners() {
+  // Бустеры - добавляем поддержку touch
   document.querySelectorAll('.booster-item').forEach(item => {
     const newItem = item.cloneNode(true);
     item.parentNode.replaceChild(newItem, item);
     
-    newItem.addEventListener('click', (event) => {
+    const handleBoosterClick = (event) => {
       event.preventDefault();
       event.stopPropagation();
-      event.stopImmediatePropagation();
       
       const booster = newItem.dataset.booster;
       
-      
       if (gameState.boosters[booster] <= 0) {
-        
         return alert('У тебя нет этого бустера!');
       }
 
@@ -78,7 +76,6 @@ export function initUIListeners() {
       gameState.activeBooster = booster;
       newItem.classList.add('active');
       
-      
       window._lastSetBooster = booster;
       window._lastSetTime = Date.now();
       window._boosterCache = {
@@ -87,7 +84,6 @@ export function initUIListeners() {
       };
 
       if (booster === 'extramoves') {
-        
         gameState.movesLeft += 5;
         document.getElementById('moves').textContent = gameState.movesLeft;
         gameState.boosters.extramoves--;
@@ -98,20 +94,40 @@ export function initUIListeners() {
       }
       
       updateProgressDisplay();
-    });
+    };
+    
+    // Добавляем оба типа событий
+    newItem.addEventListener('click', handleBoosterClick);
+    newItem.addEventListener('touchstart', handleBoosterClick, { passive: false });
   });
 
-  document.getElementById('shop-btn').addEventListener('click', () => {
-    updateShopDisplay();
-    document.getElementById('shop-modal').style.display = 'block';
-  });
+  // Кнопка магазина
+  const shopBtn = document.getElementById('shop-btn');
+  if (shopBtn) {
+    const handleShopClick = (e) => {
+      e.preventDefault();
+      updateShopDisplay();
+      document.getElementById('shop-modal').style.display = 'block';
+    };
+    shopBtn.addEventListener('click', handleShopClick);
+    shopBtn.addEventListener('touchstart', handleShopClick, { passive: false });
+  }
 
-  document.getElementById('close-shop').addEventListener('click', () => {
-    document.getElementById('shop-modal').style.display = 'none';
-  });
+  // Закрытие магазина
+  const closeShop = document.getElementById('close-shop');
+  if (closeShop) {
+    const handleCloseShop = (e) => {
+      e.preventDefault();
+      document.getElementById('shop-modal').style.display = 'none';
+    };
+    closeShop.addEventListener('click', handleCloseShop);
+    closeShop.addEventListener('touchstart', handleCloseShop, { passive: false });
+  }
 
+  // Кнопки покупки
   document.querySelectorAll('.buy-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
+    const handleBuyClick = async (e) => {
+      e.preventDefault();
       const booster = btn.dataset.booster;
       const prices = { bomb: 200, shuffle: 300, extramoves: 150, '52': 500 };
       const price = prices[booster];
@@ -122,7 +138,6 @@ export function initUIListeners() {
         document.getElementById(UI_ELEMENTS.coins).textContent = gameState.coins;
         updateShopDisplay();
         
-        // 👇 СОХРАНЯЕМ В БД ПОСЛЕ ПОКУПКИ
         const { getCurrentUser, saveProgress } = await import('./supabase.js');
         const user = await getCurrentUser();
         if (user) {
@@ -133,13 +148,15 @@ export function initUIListeners() {
             gameState.coins,
             gameState.boosters
           );
-          
         }
         
         updateProgressDisplay();
       } else {
         alert('Недостаточно монеток!');
       }
-    });
+    };
+    
+    btn.addEventListener('click', handleBuyClick);
+    btn.addEventListener('touchstart', handleBuyClick, { passive: false });
   });
 }

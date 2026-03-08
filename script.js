@@ -7,6 +7,29 @@ import { initPiggy, unsubscribeFromPiggy } from './piggy.js';
 import { initLevels } from './game/levelGoals.js';
 import { updateProgressDisplay } from './game/levelGoals.js';
 
+// Глобальная функция для предотвращения проблем с касаниями
+function setupMobileHandlers() {
+  // Отключаем стандартное поведение браузера для всех интерактивных элементов
+  document.addEventListener('touchstart', (e) => {
+    // Разрешаем скролл, но предотвращаем zoom на интерактивных элементах
+    if (e.target.closest('.modal') || 
+        e.target.closest('.booster-item') || 
+        e.target.closest('.sidebar-btn') ||
+        e.target.closest('.buy-btn') ||
+        e.target.closest('.piggy-amount') ||
+        e.target.closest('#restart-btn') ||
+        e.target.closest('#logout-btn')) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+  
+  // Исправляем проблему с :active на мобильных
+  document.addEventListener('touchstart', function(){}, {passive: true});
+}
+
+// Вызываем при загрузке
+setupMobileHandlers();
+
 // Инициализация уровней при запуске
 initLevels(20);
 

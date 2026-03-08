@@ -878,3 +878,71 @@ progress::-webkit-progress-value {
     width: 100%;
   }
 }
+
+/* Мобильные стили для всех интерактивных элементов */
+@media (max-width: 768px) {
+  /* Увеличиваем область нажатия для всех кнопок */
+  .sidebar-btn,
+  .booster-item,
+  .buy-btn,
+  .modal-btn,
+  .piggy-amount,
+  #add-to-piggy,
+  #restart-btn,
+  #logout-btn {
+    min-height: 44px;
+    min-width: 44px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Убираем задержку при нажатии */
+  .sidebar-btn,
+  .booster-item,
+  .buy-btn,
+  .modal-btn,
+  .piggy-amount,
+  #add-to-piggy,
+  #restart-btn,
+  #logout-btn {
+    transition: none;
+  }
+  
+  /* Визуальная обратная связь при нажатии */
+  .sidebar-btn:active,
+  .booster-item:active,
+  .buy-btn:active,
+  .modal-btn:active,
+  .piggy-amount:active,
+  #add-to-piggy:active,
+  #restart-btn:active,
+  #logout-btn:active {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+  
+  /* Модальные окна на мобильных */
+  .modal {
+    width: 95%;
+    max-width: 400px;
+    padding: 20px 15px;
+    touch-action: manipulation;
+  }
+  
+  .modal-buttons {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .modal-btn {
+    width: 100%;
+    padding: 14px 20px;
+    font-size: 16px;
+  }
+}
+
+/* Отключаем выделение при тапе */
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
