@@ -52,13 +52,28 @@ export function updateShopDisplay() {
   });
 }
 
+// Функция для обработки кликов на мобильных
+function handleTouchClick(element, handler) {
+  if (!element) return;
+  
+  // Удаляем старые обработчики
+  const newElement = element.cloneNode(true);
+  element.parentNode.replaceChild(newElement, element);
+  
+  // Добавляем обработчики
+  newElement.addEventListener('click', handler);
+  newElement.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    handler(e);
+  }, { passive: false });
+  
+  return newElement;
+}
+
 export function initUIListeners() {
-  // Бустеры - добавляем поддержку touch
+  // Бустеры
   document.querySelectorAll('.booster-item').forEach(item => {
-    const newItem = item.cloneNode(true);
-    item.parentNode.replaceChild(newItem, item);
-    
-    const handleBoosterClick = (event) => {
+    const newItem = handleTouchClick(item, (event) => {
       event.preventDefault();
       event.stopPropagation();
       
@@ -94,48 +109,29 @@ export function initUIListeners() {
       }
       
       updateProgressDisplay();
-    };
-    
-    // Добавляем оба типа событий
-    newItem.addEventListener('click', handleBoosterClick);
-    newItem.addEventListener('touchstart', handleBoosterClick, { passive: false });
+    });
   });
 
   // Кнопка магазина
   const shopBtn = document.getElementById('shop-btn');
-  if (shopBtn) {
-    const handleShopClick = (e) => {
-      e.preventDefault();
-      updateShopDisplay();
-      document.getElementById('shop-modal').style.display = 'block';
-    };
-    shopBtn.addEventListener('click', handleShopClick);
-    shopBtn.addEventListener('touchstart', handleShopClick, { passive: false });
-  }
+  handleTouchClick(shopBtn, (e) => {
+    e.preventDefault();
+    updateShopDisplay();
+    document.getElementById('shop-modal').style.display = 'block';
+  });
 
-  // Закрытие магазина (удаляем старый обработчик и создаем новый с cloneNode)
+  // Закрытие магазина
   const closeShop = document.getElementById('close-shop');
-  if (closeShop) {
-    const newCloseShop = closeShop.cloneNode(true);
-    closeShop.parentNode.replaceChild(newCloseShop, closeShop);
-    
-    const handleCloseShop = (e) => {
-      e.preventDefault();
-      document.getElementById('shop-modal').style.display = 'none';
-    };
-    
-    newCloseShop.addEventListener('click', handleCloseShop);
-    newCloseShop.addEventListener('touchstart', handleCloseShop, { passive: false });
-  }
+  handleTouchClick(closeShop, (e) => {
+    e.preventDefault();
+    document.getElementById('shop-modal').style.display = 'none';
+  });
 
   // Кнопки покупки
   document.querySelectorAll('.buy-btn').forEach(btn => {
-    const newBtn = btn.cloneNode(true);
-    btn.parentNode.replaceChild(newBtn, btn);
-    
-    const handleBuyClick = async (e) => {
+    handleTouchClick(btn, async (e) => {
       e.preventDefault();
-      const booster = newBtn.dataset.booster;
+      const booster = btn.dataset.booster;
       const prices = { bomb: 200, shuffle: 300, extramoves: 150, '52': 500 };
       const price = prices[booster];
 
@@ -161,10 +157,50 @@ export function initUIListeners() {
       } else {
         alert('Недостаточно монеток!');
       }
-    };
-    
-    newBtn.addEventListener('click', handleBuyClick);
-    newBtn.addEventListener('touchstart', handleBuyClick, { passive: false });
+    });
+  });
+
+  // Кнопка рестарта
+  const restartBtn = document.getElementById('restart-btn');
+  handleTouchClick(restartBtn, () => {
+    console.log('🔄 Нажата кнопка рестарта');
+    handleRestart(true);
+  });
+
+  // Кнопка выхода
+  const logoutBtn = document.getElementById('logout-btn');
+  handleTouchClick(logoutBtn, async () => {
+    console.log('🚪 Выход из игры');
+    // ... логика выхода
+  });
+
+  // Кнопки в модалке победы
+  const nextBtn = document.getElementById('next-level-btn');
+  handleTouchClick(nextBtn, async () => {
+    console.log('🎯 Следующий уровень');
+    // ... логика следующего уровня
+  });
+
+  const restartWinBtn = document.getElementById('restart-win-btn');
+  handleTouchClick(restartWinBtn, () => {
+    console.log('🔄 Заново в модалке');
+    // ... логика рестарта
+  });
+
+  // Кнопки в модалке 0 шагов
+  const addMovesBtn = document.getElementById('add-moves');
+  handleTouchClick(addMovesBtn, () => {
+    gameState.movesLeft += 10;
+    document.getElementById('moves').textContent = gameState.movesLeft;
+    document.getElementById('modal').style.display = 'none';
+  });
+
+  const restartModalBtn = document.getElementById('restart-modal');
+  handleTouchClick(restartModalBtn, () => {
+    document.getElementById('modal').style.display = 'none';
+    if (typeof handleRestart === 'function') {
+      handleRestart(true);
+    }
   });
 
   // Закрытие модалок при клике вне их области
@@ -172,60 +208,18 @@ export function initUIListeners() {
   modals.forEach(modalId => {
     const modal = document.getElementById(modalId);
     if (modal) {
-      // Удаляем старые обработчики
-      const newModal = modal.cloneNode(true);
-      modal.parentNode.replaceChild(newModal, modal);
-      
-      newModal.addEventListener('click', (e) => {
-        if (e.target === newModal) {
-          newModal.style.display = 'none';
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.style.display = 'none';
         }
       });
       
-      newModal.addEventListener('touchstart', (e) => {
-        if (e.target === newModal) {
+      modal.addEventListener('touchstart', (e) => {
+        if (e.target === modal) {
           e.preventDefault();
-          newModal.style.display = 'none';
+          modal.style.display = 'none';
         }
       }, { passive: false });
     }
   });
-
-  // Кнопка рестарта в модалке (добавляем touch)
-  const restartModalBtn = document.getElementById('restart-modal');
-  if (restartModalBtn) {
-    const newRestartModalBtn = restartModalBtn.cloneNode(true);
-    restartModalBtn.parentNode.replaceChild(newRestartModalBtn, restartModalBtn);
-    
-    newRestartModalBtn.addEventListener('click', () => {
-      document.getElementById('modal').style.display = 'none';
-      window.location.reload(); // или ваш метод рестарта
-    });
-    
-    newRestartModalBtn.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      document.getElementById('modal').style.display = 'none';
-      window.location.reload();
-    }, { passive: false });
-  }
-
-  // Кнопка добавления ходов
-  const addMovesBtn = document.getElementById('add-moves');
-  if (addMovesBtn) {
-    const newAddMovesBtn = addMovesBtn.cloneNode(true);
-    addMovesBtn.parentNode.replaceChild(newAddMovesBtn, addMovesBtn);
-    
-    newAddMovesBtn.addEventListener('click', () => {
-      gameState.movesLeft += 10;
-      document.getElementById('moves').textContent = gameState.movesLeft;
-      document.getElementById('modal').style.display = 'none';
-    });
-    
-    newAddMovesBtn.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      gameState.movesLeft += 10;
-      document.getElementById('moves').textContent = gameState.movesLeft;
-      document.getElementById('modal').style.display = 'none';
-    }, { passive: false });
-  }
 }
