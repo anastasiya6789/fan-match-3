@@ -946,3 +946,84 @@ progress::-webkit-progress-value {
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
 }
+
+/* Добавьте этот блок в конец файла style.css */
+
+/* Улучшенные стили для модалок на мобильных */
+@media (max-width: 768px) {
+  .modal {
+    width: 95%;
+    max-width: 95%;
+    padding: 20px 15px;
+    max-height: 85vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .shop-modal {
+    min-width: 280px;
+    width: 95%;
+  }
+  
+  .shop-items {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    max-height: 50vh;
+    overflow-y: auto;
+    padding: 5px;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .shop-item {
+    width: 100%;
+    max-width: 280px;
+  }
+  
+  .leaderboard-modal {
+    min-width: 280px;
+    width: 95%;
+  }
+  
+  .leaderboard-list {
+    max-height: 50vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .piggy-modal {
+    max-height: 80vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .modal-buttons {
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 15px;
+  }
+  
+  .modal-btn {
+    width: 100%;
+    padding: 12px 20px;
+    font-size: 16px;
+  }
+  
+  .close-btn {
+    margin-top: 10px;
+  }
+  
+  /* Добавляем возможность закрыть модалку кликом вне её области */
+  .modal {
+    pointer-events: auto;
+  }
+}
+
+/* Закрытие по клику вне модалки */
+.modal {
+  pointer-events: none;
+}
+
+.modal > * {
+  pointer-events: auto;
+}

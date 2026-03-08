@@ -113,22 +113,29 @@ export function initUIListeners() {
     shopBtn.addEventListener('touchstart', handleShopClick, { passive: false });
   }
 
-  // Закрытие магазина
+  // Закрытие магазина (удаляем старый обработчик и создаем новый с cloneNode)
   const closeShop = document.getElementById('close-shop');
   if (closeShop) {
+    const newCloseShop = closeShop.cloneNode(true);
+    closeShop.parentNode.replaceChild(newCloseShop, closeShop);
+    
     const handleCloseShop = (e) => {
       e.preventDefault();
       document.getElementById('shop-modal').style.display = 'none';
     };
-    closeShop.addEventListener('click', handleCloseShop);
-    closeShop.addEventListener('touchstart', handleCloseShop, { passive: false });
+    
+    newCloseShop.addEventListener('click', handleCloseShop);
+    newCloseShop.addEventListener('touchstart', handleCloseShop, { passive: false });
   }
 
   // Кнопки покупки
   document.querySelectorAll('.buy-btn').forEach(btn => {
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+    
     const handleBuyClick = async (e) => {
       e.preventDefault();
-      const booster = btn.dataset.booster;
+      const booster = newBtn.dataset.booster;
       const prices = { bomb: 200, shuffle: 300, extramoves: 150, '52': 500 };
       const price = prices[booster];
 
@@ -156,7 +163,69 @@ export function initUIListeners() {
       }
     };
     
-    btn.addEventListener('click', handleBuyClick);
-    btn.addEventListener('touchstart', handleBuyClick, { passive: false });
+    newBtn.addEventListener('click', handleBuyClick);
+    newBtn.addEventListener('touchstart', handleBuyClick, { passive: false });
   });
+
+  // Закрытие модалок при клике вне их области
+  const modals = ['shop-modal', 'leaderboard-modal', 'piggy-modal', 'win-modal', 'modal'];
+  modals.forEach(modalId => {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+      // Удаляем старые обработчики
+      const newModal = modal.cloneNode(true);
+      modal.parentNode.replaceChild(newModal, modal);
+      
+      newModal.addEventListener('click', (e) => {
+        if (e.target === newModal) {
+          newModal.style.display = 'none';
+        }
+      });
+      
+      newModal.addEventListener('touchstart', (e) => {
+        if (e.target === newModal) {
+          e.preventDefault();
+          newModal.style.display = 'none';
+        }
+      }, { passive: false });
+    }
+  });
+
+  // Кнопка рестарта в модалке (добавляем touch)
+  const restartModalBtn = document.getElementById('restart-modal');
+  if (restartModalBtn) {
+    const newRestartModalBtn = restartModalBtn.cloneNode(true);
+    restartModalBtn.parentNode.replaceChild(newRestartModalBtn, restartModalBtn);
+    
+    newRestartModalBtn.addEventListener('click', () => {
+      document.getElementById('modal').style.display = 'none';
+      window.location.reload(); // или ваш метод рестарта
+    });
+    
+    newRestartModalBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      document.getElementById('modal').style.display = 'none';
+      window.location.reload();
+    }, { passive: false });
+  }
+
+  // Кнопка добавления ходов
+  const addMovesBtn = document.getElementById('add-moves');
+  if (addMovesBtn) {
+    const newAddMovesBtn = addMovesBtn.cloneNode(true);
+    addMovesBtn.parentNode.replaceChild(newAddMovesBtn, addMovesBtn);
+    
+    newAddMovesBtn.addEventListener('click', () => {
+      gameState.movesLeft += 10;
+      document.getElementById('moves').textContent = gameState.movesLeft;
+      document.getElementById('modal').style.display = 'none';
+    });
+    
+    newAddMovesBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      gameState.movesLeft += 10;
+      document.getElementById('moves').textContent = gameState.movesLeft;
+      document.getElementById('modal').style.display = 'none';
+    }, { passive: false });
+  }
 }

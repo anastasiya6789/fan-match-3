@@ -30,6 +30,45 @@ function setupMobileHandlers() {
 // Вызываем при загрузке
 setupMobileHandlers();
 
+// Сохраняем состояние игры перед поворотом
+window.addEventListener('orientationchange', () => {
+  console.log('📱 Изменение ориентации экрана');
+  
+  // Сохраняем текущее состояние
+  const currentState = {
+    level: gameState.currentLevel,
+    score: gameState.levelScore,
+    coins: gameState.coins,
+    lifetimeScore: gameState.lifetimeScore,
+    boosters: { ...gameState.boosters }
+  };
+  
+  // Небольшая задержка для завершения анимации поворота
+  setTimeout(() => {
+    // Восстанавливаем состояние после поворота
+    gameState.currentLevel = currentState.level;
+    gameState.levelScore = currentState.score;
+    gameState.coins = currentState.coins;
+    gameState.lifetimeScore = currentState.lifetimeScore;
+    gameState.boosters = { ...currentState.boosters };
+    
+    // Обновляем UI
+    updateUI();
+    updateShopDisplay();
+    updateProgressDisplay();
+    
+    // Обновляем canvas
+    const container = document.getElementById('phaser-container');
+    if (container && window._currentPhaserGame) {
+      const canvas = container.querySelector('canvas');
+      if (canvas) {
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+      }
+    }
+  }, 300);
+});
+
 // Инициализация уровней при запуске
 initLevels(20);
 
@@ -374,9 +413,6 @@ function setupWinModalListeners() {
 }
 
 // Запуск Phaser с правильным масштабированием
-// Замените функцию startPhaser на эту версию:
-
-// Запуск Phaser с правильным масштабированием
 function startPhaser() {
   console.log('🎮 ===== ЗАПУСК PHASER =====');
   
@@ -408,49 +444,21 @@ function startPhaser() {
   const basePadding = 8;
   
   // Рассчитываем размер гема так, чтобы сетка заполняла контейнер по ширине
-  // Но оставляем место для текста снизу
-  const availableHeight = containerHeight - 40; // Учитываем место для текста
+  const availableHeight = containerHeight - 40;
   
-  // Размер гема должен быть таким, чтобы вся сетка поместилась
-  // По ширине: gridSize * gemSize + (gridSize - 1) * padding ≈ containerWidth
-  // По высоте: gridSize * gemSize + (gridSize - 1) * padding + 40 ≈ containerHeight
-  
-  // Решаем уравнение для gemSize
   const gemSizeByWidth = Math.floor((containerWidth - basePadding * (gridSize - 1)) / gridSize);
   const gemSizeByHeight = Math.floor((availableHeight - basePadding * (gridSize - 1)) / gridSize);
   
-  // Берем минимальный, чтобы всё поместилось
-  let gemSize = Math.min(gemSizeByWidth, gemSizeByHeight, 80); // Максимум 80
-  gemSize = Math.max(gemSize, 35); // Минимум 35
+  let gemSize = Math.min(gemSizeByWidth, gemSizeByHeight, 80);
+  gemSize = Math.max(gemSize, 35);
   
-  // Масштабируем отступ пропорционально размеру гема
   const padding = Math.max(4, Math.floor(basePadding * (gemSize / 80)));
   
-  console.log('📐 Расчет размеров:', {
-    gemSizeByWidth,
-    gemSizeByHeight,
-    gemSize,
-    padding,
-    containerWidth,
-    availableHeight
-  });
-  
-  // Обновляем gameState
   gameState.GEM_SIZE = gemSize;
   gameState.GRID_PADDING = padding;
   
-  // Рассчитываем точный размер канваса, который создаст Phaser
   const canvasWidth = gridSize * (gemSize + padding) - padding;
-  const canvasHeight = canvasWidth + 40; // Добавляем 40px для текста
-  
-  console.log('🎯 Итоговые размеры:', {
-    gemSize,
-    padding,
-    canvasWidth,
-    canvasHeight,
-    containerWidth,
-    containerHeight
-  });
+  const canvasHeight = canvasWidth + 40;
 
   const config = {
     type: Phaser.AUTO,
@@ -463,7 +471,7 @@ function startPhaser() {
       update: update
     },
     scale: {
-      mode: Phaser.Scale.NONE, // Убираем автоматическое масштабирование
+      mode: Phaser.Scale.NONE,
       parent: 'phaser-container',
       width: canvasWidth,
       height: canvasHeight
@@ -472,16 +480,13 @@ function startPhaser() {
   };
 
   if (window._currentPhaserGame) {
-    console.log('🧹 Уничтожаем старую игру Phaser');
     window._currentPhaserGame.destroy(true);
     window._currentPhaserGame = null;
   }
 
-  console.log('🎮 Создаем новую игру Phaser');
   window._currentPhaserGame = new Phaser.Game(config);
   initGameLogic(window._currentPhaserGame);
   
-  // Принудительно обновляем размер canvas после создания
   setTimeout(() => {
     if (window._currentPhaserGame) {
       const canvas = container.querySelector('canvas');
@@ -491,22 +496,16 @@ function startPhaser() {
       }
     }
   }, 100);
-  
-  console.log('✅ Phaser запущен');
 }
 
-// Обновите обработчик resize, чтобы не перезапускался слишком часто:
-
-// Обработчик изменения размера окна с правильным debounce
+// Обработчик изменения размера окна - БЕЗ ПЕРЕЗАПУСКА ИГРЫ
 window.addEventListener('resize', () => {
   console.log('📱 Изменение размера окна');
   
-  // Отменяем предыдущий таймаут
   if (window._resizeTimeout) {
     clearTimeout(window._resizeTimeout);
   }
   
-  // Устанавливаем новый таймаут
   window._resizeTimeout = setTimeout(() => {
     const container = document.getElementById('phaser-container');
     if (!container) return;
@@ -514,71 +513,33 @@ window.addEventListener('resize', () => {
     const newWidth = container.clientWidth;
     const newHeight = container.clientHeight;
     
-    // Проверяем, действительно ли изменились размеры
     if (Math.abs(newWidth - window._lastContainerSize.width) > 20 || 
         Math.abs(newHeight - window._lastContainerSize.height) > 20) {
       
-      console.log('📱 Размеры изменились существенно, перезапускаем');
+      console.log('📱 Размеры изменились существенно, обновляем canvas');
       window._lastContainerSize = { width: newWidth, height: newHeight };
       
-      if (window._currentPhaserGame && !window._isRestarting) {
-        const user = getCurrentUser();
-        if (user) {
-          startPhaser();
-        }
-      }
-    } else {
-      console.log('📱 Размеры изменились незначительно, только обновляем canvas');
-      // Просто обновляем размер canvas, не перезапуская игру
       if (window._currentPhaserGame) {
         const canvas = container.querySelector('canvas');
         if (canvas) {
           canvas.style.width = '100%';
           canvas.style.height = '100%';
         }
-      }
-    }
-    
-    window._resizeTimeout = null;
-  }, 500);
-});
-
-// Обработчик изменения размера окна с правильным debounce
-window.addEventListener('resize', () => {
-  console.log('📱 Изменение размера окна');
-  
-  // Отменяем предыдущий таймаут
-  if (window._resizeTimeout) {
-    clearTimeout(window._resizeTimeout);
-  }
-  
-  // Устанавливаем новый таймаут
-  window._resizeTimeout = setTimeout(() => {
-    const container = document.getElementById('phaser-container');
-    if (!container) return;
-    
-    const newWidth = container.clientWidth;
-    const newHeight = container.clientHeight;
-    
-    // Проверяем, действительно ли изменились размеры
-    if (Math.abs(newWidth - window._lastContainerSize.width) > 10 || 
-        Math.abs(newHeight - window._lastContainerSize.height) > 10) {
-      
-      console.log('📱 Размеры изменились существенно, перезапускаем');
-      window._lastContainerSize = { width: newWidth, height: newHeight };
-      
-      if (window._currentPhaserGame && !window._isRestarting) {
-        const user = getCurrentUser();
-        if (user) {
-          startPhaser();
+        
+        // Обновляем размеры для будущих созданий
+        const gemSizeByWidth = Math.floor((newWidth - 8 * (gameState.GRID_SIZE - 1)) / gameState.GRID_SIZE);
+        let newGemSize = Math.min(gemSizeByWidth, 80);
+        newGemSize = Math.max(newGemSize, 35);
+        
+        if (Math.abs(newGemSize - gameState.GEM_SIZE) > 15) {
+          gameState.GEM_SIZE = newGemSize;
+          gameState.GRID_PADDING = Math.max(4, Math.floor(8 * (newGemSize / 80)));
         }
       }
-    } else {
-      console.log('📱 Размеры изменились незначительно, игнорируем');
     }
     
     window._resizeTimeout = null;
-  }, 500); // Увеличил задержку до 500мс
+  }, 300);
 });
 
 function preload() {
@@ -612,7 +573,6 @@ async function restartLevel(resetFromDB = true) {
   gameState.grid = Array.from({ length: gameState.GRID_SIZE }, () => Array(gameState.GRID_SIZE).fill(null));
   
   if (window._currentPhaserGame && window._currentPhaserGame.scene.scenes[0]) {
-    console.log('🔄 Перезапуск сцены Phaser');
     window._currentPhaserGame.scene.scenes[0].scene.restart();
   }
 
@@ -641,6 +601,4 @@ async function restartLevel(resetFromDB = true) {
   console.log('✅ Рестарт завершен, текущий уровень:', gameState.currentLevel);
 }
 
-function update() {
-  // Пусто
-}
+function update() {}
