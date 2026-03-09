@@ -222,6 +222,93 @@ export function initUIListeners() {
     });
   }
 
+  // 👇 ВАЖНО: КНОПКИ В МОДАЛКЕ ПОБЕДЫ - обрабатываем ТАК ЖЕ как и другие
+  const nextLevelBtn = document.getElementById('next-level-btn');
+  if (nextLevelBtn) {
+    handleTouchClick(nextLevelBtn, async (e) => {
+      e.preventDefault();
+      console.log('🎯 Следующий уровень');
+      
+      const winModal = document.getElementById('win-modal');
+      winModal.style.display = 'none';
+      
+      if (gameState.song) gameState.song.stop();
+
+      const VISUAL_REWARD = 2000;
+      const ACTUAL_REWARD = 1000;
+      
+      if (!window._levelCompleted) {
+        window._levelCompleted = true;
+        
+        alert(`🎉 Уровень пройден! +${VISUAL_REWARD} монеток!`);
+        
+        gameState.coins += ACTUAL_REWARD;
+        gameState.lifetimeScore = (gameState.lifetimeScore || 0) + (gameState.levelScore || 0);
+        
+        console.log(`💰 Визуально: +${VISUAL_REWARD}, Реально: +${ACTUAL_REWARD}`);
+      }
+      
+      gameState.levelScore = 0;
+      gameState.currentLevel++;
+      
+      if (gameState.currentLevel > 5) {
+        alert('🎉 Игра полностью пройдена! Возвращаемся на уровень 1.');
+        gameState.currentLevel = 1;
+      }
+
+      document.getElementById('level').textContent = gameState.currentLevel;
+      document.getElementById('score').textContent = gameState.levelScore;
+      
+      // Обновляем текст цели
+      const { getLevelText } = await import('./game/levelGoals.js');
+      document.getElementById('goal-text').textContent = getLevelText();
+
+      const { getCurrentUser, saveProgress } = await import('./supabase.js');
+      const user = await getCurrentUser();
+      if (user) {
+        try {
+          await saveProgress(
+            user.id, 
+            gameState.currentLevel, 
+            gameState.lifetimeScore, 
+            gameState.coins,
+            gameState.boosters
+          );
+          
+          setTimeout(() => {
+            window._levelCompleted = false;
+          }, 1000);
+          
+        } catch (err) {
+          console.error('❌ Ошибка сохранения:', err);
+        }
+      }
+
+      if (typeof window.handleRestart === 'function') {
+        window.handleRestart(false);
+      }
+    });
+  }
+
+  const restartWinBtn = document.getElementById('restart-win-btn');
+  if (restartWinBtn) {
+    handleTouchClick(restartWinBtn, (e) => {
+      e.preventDefault();
+      console.log('🔄 Заново в модалке');
+      
+      const winModal = document.getElementById('win-modal');
+      winModal.style.display = 'none';
+      if (gameState.song) gameState.song.stop();
+
+      gameState.levelScore = 0;
+      document.getElementById('score').textContent = gameState.levelScore;
+
+      if (typeof window.handleRestart === 'function') {
+        window.handleRestart(false);
+      }
+    });
+  }
+
   // Кнопки закрытия для всех модалок
   const closeButtons = {
     'close-leaderboard': 'leaderboard-modal',
@@ -262,25 +349,4 @@ export function initUIListeners() {
       }, { passive: false });
     }
   });
-
-  // 👇 СПЕЦИАЛЬНАЯ ОБРАБОТКА ДЛЯ МОДАЛКИ ПОБЕДЫ (вы вставили правильно)
-  const winModal = document.getElementById('win-modal');
-  if (winModal) {
-    winModal.style.pointerEvents = 'auto';
-    
-    const nextBtn = document.getElementById('next-level-btn');
-    const restartWinBtn = document.getElementById('restart-win-btn');
-    
-    if (nextBtn) {
-      nextBtn.style.pointerEvents = 'auto';
-      nextBtn.style.cursor = 'pointer';
-      nextBtn.style.zIndex = '10001';
-    }
-    
-    if (restartWinBtn) {
-      restartWinBtn.style.pointerEvents = 'auto';
-      restartWinBtn.style.cursor = 'pointer';
-      restartWinBtn.style.zIndex = '10001';
-    }
-  }
 }
