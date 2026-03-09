@@ -985,3 +985,58 @@ button,
     gap: 8px;
   }
 }
+/* Принудительные стили для модалки победы */
+#win-modal {
+  pointer-events: auto !important;
+  z-index: 10000 !important;
+}
+
+#win-modal button {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  z-index: 10001 !important;
+  position: relative;
+  min-height: 48px;
+  min-width: 120px;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 18px;
+  margin: 10px;
+  padding: 12px 24px;
+  -webkit-appearance: none;
+  appearance: none;
+  touch-action: manipulation;
+}
+
+#win-modal button:active {
+  transform: scale(0.95);
+  opacity: 0.9;
+}
+
+#win-modal .restart-btn {
+  background: #f44336;
+}
+
+/* Для мобильных */
+@media (max-width: 768px) {
+  #win-modal {
+    width: 90%;
+    padding: 20px;
+  }
+  
+  #win-modal button {
+    width: 100%;
+    margin: 5px 0;
+    font-size: 16px;
+    padding: 15px;
+  }
+}
+
+/* Анимация для кнопки музыки */
+@keyframes pulse {
+  0% { transform: translateX(-50%) scale(1); }
+  50% { transform: translateX(-50%) scale(1.05); }
+  100% { transform: translateX(-50%) scale(1); }
+}

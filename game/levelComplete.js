@@ -22,76 +22,75 @@ export function showWinModal(scene) {
   winModal.style.pointerEvents = 'auto';
   winModal.style.zIndex = '10000';
   
-  // Пытаемся запустить музыку с учетом мобильных ограничений
+  // Пытаемся запустить музыку
   if (gameState.song) {
-    // Для мобильных устройств нужно запускать аудио в ответ на действие пользователя
+    // Пробуем сразу запустить
     gameState.song.play().catch(error => {
-      console.log('⚠️ Автовоспроизведение заблокировано браузером:', error);
-      // Создаем подсказку для включения музыки
-      const musicHint = document.createElement('div');
-      musicHint.className = 'music-hint';
-      musicHint.textContent = '🔊 Нажмите для включения музыки';
-      musicHint.style.cssText = `
+      console.log('⚠️ Автовоспроизведение заблокировано');
+      
+      // Создаем большую заметную кнопку для включения музыки
+      const musicBtn = document.createElement('button');
+      musicBtn.textContent = '🔊 Включить музыку';
+      musicBtn.style.cssText = `
         position: fixed;
-        bottom: 20px;
+        bottom: 30px;
         left: 50%;
         transform: translateX(-50%);
-        background: rgba(0,0,0,0.8);
-        color: white;
-        padding: 10px 20px;
-        border-radius: 30px;
-        font-size: 14px;
+        background: #FFD700;
+        color: black;
+        padding: 15px 30px;
+        border-radius: 50px;
+        font-size: 18px;
+        font-weight: bold;
+        border: none;
         z-index: 10001;
         cursor: pointer;
-        pointer-events: auto;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        animation: pulse 2s infinite;
       `;
-      document.body.appendChild(musicHint);
+      document.body.appendChild(musicBtn);
       
-      // Обработчики для подсказки
-      musicHint.addEventListener('click', () => {
+      musicBtn.addEventListener('click', () => {
         gameState.song.play();
-        musicHint.remove();
+        musicBtn.remove();
       });
       
-      musicHint.addEventListener('touchstart', (e) => {
+      musicBtn.addEventListener('touchstart', (e) => {
         e.preventDefault();
         gameState.song.play();
-        musicHint.remove();
-      }, { passive: false });
+        musicBtn.remove();
+      });
     });
   }
 
   clearInterval(gameState.timerInterval);
-  setupWinModalListeners();
+  
+  // Устанавливаем обработчики напрямую, без cloneNode
+  setupWinModalButtons();
 }
 
-function setupWinModalListeners() {
+function setupWinModalButtons() {
   const winModal = document.getElementById('win-modal');
   const nextBtn = document.getElementById('next-level-btn');
   const restartBtn = document.getElementById('restart-win-btn');
 
-  // Удаляем старые обработчики через cloneNode
-  const newNextBtn = nextBtn.cloneNode(true);
-  const newRestartBtn = restartBtn.cloneNode(true);
-  nextBtn.parentNode.replaceChild(newNextBtn, nextBtn);
-  restartBtn.parentNode.replaceChild(newRestartBtn, restartBtn);
+  if (!nextBtn || !restartBtn) {
+    console.error('❌ Кнопки в модалке победы не найдены');
+    return;
+  }
 
-  // Убеждаемся что кнопки кликабельны
-  newNextBtn.style.pointerEvents = 'auto';
-  newNextBtn.style.cursor = 'pointer';
-  newNextBtn.style.zIndex = '10001';
-  
-  newRestartBtn.style.pointerEvents = 'auto';
-  newRestartBtn.style.cursor = 'pointer';
-  newRestartBtn.style.zIndex = '10001';
+  // Удаляем все старые обработчики
+  nextBtn.onclick = null;
+  nextBtn.ontouchstart = null;
+  restartBtn.onclick = null;
+  restartBtn.ontouchstart = null;
 
-  // Обработчик для "Следующий уровень"
-  newNextBtn.onclick = async (e) => {
+  // Устанавливаем новые обработчики напрямую
+  nextBtn.onclick = async (e) => {
     e.preventDefault();
     e.stopPropagation();
     console.log('➡️ Нажата кнопка "Следующий уровень"');
     
-    setLevelCompleted(false);
     winModal.style.display = 'none';
     if (gameState.song) gameState.song.stop();
 
@@ -99,29 +98,30 @@ function setupWinModalListeners() {
     gameState.levelScore = 0;
     gameState.currentLevel++;
     
-    console.log(`📈 Переход на уровень ${gameState.currentLevel}`);
-    
     if (gameState.currentLevel > 20) {
       alert('🎉 Поздравляем! Вы прошли все уровни! Генерируем новые...');
       gameState.currentLevel = 1;
       initLevels(20);
     }
 
+    document.getElementById('level').textContent = gameState.currentLevel;
+    document.getElementById('score').textContent = gameState.levelScore;
+    
     resetLevelProgress();
     await saveGameProgress();
     
     window._levelCompleted = false;
+    setLevelCompleted(false);
     
     restartLevel(true);
   };
 
   // Добавляем touch-обработчик для мобильных
-  newNextBtn.addEventListener('touchstart', async (e) => {
+  nextBtn.ontouchstart = async (e) => {
     e.preventDefault();
     e.stopPropagation();
     console.log('👆 Нажата кнопка "Следующий уровень" (touch)');
     
-    setLevelCompleted(false);
     winModal.style.display = 'none';
     if (gameState.song) gameState.song.stop();
 
@@ -135,49 +135,65 @@ function setupWinModalListeners() {
       initLevels(20);
     }
 
+    document.getElementById('level').textContent = gameState.currentLevel;
+    document.getElementById('score').textContent = gameState.levelScore;
+    
     resetLevelProgress();
     await saveGameProgress();
     
     window._levelCompleted = false;
+    setLevelCompleted(false);
     
     restartLevel(true);
-  }, { passive: false });
+  };
 
-  // Обработчик для "Заново"
-  newRestartBtn.onclick = (e) => {
+  // Обработчик для кнопки "Заново"
+  restartBtn.onclick = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log('🔄 Нажата кнопка "Заново" в модалке');
+    console.log('🔄 Нажата кнопка "Заново"');
     
-    setLevelCompleted(false);
     winModal.style.display = 'none';
     if (gameState.song) gameState.song.stop();
+
     gameState.levelScore = 0;
+    document.getElementById('score').textContent = gameState.levelScore;
     
     resetLevelProgress();
     
     window._levelCompleted = false;
+    setLevelCompleted(false);
     
     restartLevel(false);
   };
 
-  // Добавляем touch-обработчик для мобильных
-  newRestartBtn.addEventListener('touchstart', (e) => {
+  // Touch-обработчик для кнопки "Заново"
+  restartBtn.ontouchstart = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log('👆 Нажата кнопка "Заново" в модалке (touch)');
+    console.log('👆 Нажата кнопка "Заново" (touch)');
     
-    setLevelCompleted(false);
     winModal.style.display = 'none';
     if (gameState.song) gameState.song.stop();
+
     gameState.levelScore = 0;
+    document.getElementById('score').textContent = gameState.levelScore;
     
     resetLevelProgress();
     
     window._levelCompleted = false;
+    setLevelCompleted(false);
     
     restartLevel(false);
-  }, { passive: false });
+  };
+
+  // Добавляем визуальную обратную связь
+  [nextBtn, restartBtn].forEach(btn => {
+    btn.style.cursor = 'pointer';
+    btn.style.pointerEvents = 'auto';
+    btn.style.position = 'relative';
+    btn.style.zIndex = '10001';
+  });
 }
 
 async function saveGameProgress() {
