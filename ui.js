@@ -262,4 +262,25 @@ export function initUIListeners() {
       }, { passive: false });
     }
   });
+
+  // 👇 СПЕЦИАЛЬНАЯ ОБРАБОТКА ДЛЯ МОДАЛКИ ПОБЕДЫ (вы вставили правильно)
+  const winModal = document.getElementById('win-modal');
+  if (winModal) {
+    winModal.style.pointerEvents = 'auto';
+    
+    const nextBtn = document.getElementById('next-level-btn');
+    const restartWinBtn = document.getElementById('restart-win-btn');
+    
+    if (nextBtn) {
+      nextBtn.style.pointerEvents = 'auto';
+      nextBtn.style.cursor = 'pointer';
+      nextBtn.style.zIndex = '10001';
+    }
+    
+    if (restartWinBtn) {
+      restartWinBtn.style.pointerEvents = 'auto';
+      restartWinBtn.style.cursor = 'pointer';
+      restartWinBtn.style.zIndex = '10001';
+    }
+  }
 }

@@ -923,3 +923,65 @@ button,
   width: 100% !important;
   max-width: 280px !important;
 }
+/* Специальные стили для модалки победы */
+.win-modal {
+  pointer-events: auto !important;
+  z-index: 10000 !important;
+}
+
+.win-modal button {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  position: relative;
+  z-index: 10001 !important;
+  min-height: 44px;
+  min-width: 44px;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: transform 0.2s;
+}
+
+.win-modal button:active {
+  transform: scale(0.95);
+  opacity: 0.9;
+}
+
+.win-modal .restart-btn {
+  background: #f44336;
+}
+
+/* Подсказка для музыки */
+.music-hint {
+  animation: pulse 2s infinite;
+  pointer-events: auto !important;
+  z-index: 10001 !important;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.8; transform: translateX(-50%) scale(1); }
+  50% { opacity: 1; transform: translateX(-50%) scale(1.05); }
+  100% { opacity: 0.8; transform: translateX(-50%) scale(1); }
+}
+
+/* Для мобильных */
+@media (max-width: 768px) {
+  .win-modal {
+    padding: 20px 15px;
+    width: 95%;
+    max-width: 350px;
+  }
+  
+  .win-modal button {
+    width: 100%;
+    margin: 5px 0;
+    padding: 12px 20px;
+  }
+  
+  .win-modal .modal-buttons {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
