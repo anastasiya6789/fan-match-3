@@ -18,152 +18,131 @@ export function showWinModal(scene) {
 
   winModal.style.display = 'block';
   
-  // Принудительно убираем все возможные блокировки
+  // Убеждаемся что модалка видна и кликабельна
   winModal.style.pointerEvents = 'auto';
   winModal.style.zIndex = '999999';
   
-  // Музыка
+  // Пытаемся запустить музыку
   if (gameState.song) {
-    gameState.song.play().catch(() => {
-      const musicBtn = document.createElement('button');
-      musicBtn.textContent = '🔊 Музыка';
-      musicBtn.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: #FFD700;
-        color: black;
-        padding: 15px 30px;
-        border-radius: 50px;
-        font-size: 18px;
-        border: none;
-        z-index: 999999;
-        cursor: pointer;
-      `;
-      document.body.appendChild(musicBtn);
-      musicBtn.onclick = () => {
-        gameState.song.play();
-        musicBtn.remove();
-      };
-      musicBtn.ontouchstart = (e) => {
-        e.preventDefault();
-        gameState.song.play();
-        musicBtn.remove();
-      };
+    gameState.song.play().catch(error => {
+      console.log('⚠️ Автовоспроизведение заблокировано');
     });
   }
 
   clearInterval(gameState.timerInterval);
   
-  // Устанавливаем обработчики максимально просто
-  setupButtons();
+  // Используем ТОТ ЖЕ подход что и в других модалках
+  setupWinModalListeners();
 }
 
-function setupButtons() {
+function setupWinModalListeners() {
   const winModal = document.getElementById('win-modal');
   const nextBtn = document.getElementById('next-level-btn');
   const restartBtn = document.getElementById('restart-win-btn');
 
-  if (!nextBtn || !restartBtn) return;
+  // Клонируем кнопки как в других модалках (как в piggy.js, leaderboard.js)
+  const newNextBtn = nextBtn.cloneNode(true);
+  const newRestartBtn = restartBtn.cloneNode(true);
+  
+  nextBtn.parentNode.replaceChild(newNextBtn, nextBtn);
+  restartBtn.parentNode.replaceChild(newRestartBtn, restartBtn);
 
-  // Убираем все возможные атрибуты, которые могут мешать
-  [nextBtn, restartBtn].forEach(btn => {
-    btn.removeAttribute('disabled');
-    btn.style.pointerEvents = 'auto';
-    btn.style.cursor = 'pointer';
-    btn.style.opacity = '1';
-    btn.style.zIndex = '999999';
-    btn.style.position = 'relative';
-  });
+  // Убеждаемся что кнопки кликабельны
+  newNextBtn.style.pointerEvents = 'auto';
+  newNextBtn.style.cursor = 'pointer';
+  newNextBtn.style.zIndex = '10001';
+  
+  newRestartBtn.style.pointerEvents = 'auto';
+  newRestartBtn.style.cursor = 'pointer';
+  newRestartBtn.style.zIndex = '10001';
 
-  // Функция для обработки клика
-  const handleNextClick = (e) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    console.log('➡️ НАЖАТА КНОПКА NEXT');
+  // Обработчик для "Следующий уровень" (как в других модалках)
+  newNextBtn.onclick = async () => {
+    console.log('🎯 Следующий уровень');
     
     winModal.style.display = 'none';
     if (gameState.song) gameState.song.stop();
 
-    gameState.lifetimeScore += gameState.levelScore;
+    const VISUAL_REWARD = 2000;
+    const ACTUAL_REWARD = 1000;
+    
+    if (!window._levelCompleted) {
+      window._levelCompleted = true;
+      
+      alert(`🎉 Уровень пройден! +${VISUAL_REWARD} монеток!`);
+      
+      gameState.coins += ACTUAL_REWARD;
+      gameState.lifetimeScore = (gameState.lifetimeScore || 0) + (gameState.levelScore || 0);
+      
+      console.log(`💰 Визуально: +${VISUAL_REWARD}, Реально: +${ACTUAL_REWARD}`);
+    }
+    
     gameState.levelScore = 0;
     gameState.currentLevel++;
     
-    if (gameState.currentLevel > 20) {
+    if (gameState.currentLevel > 5) {
+      alert('🎉 Игра полностью пройдена! Возвращаемся на уровень 1.');
       gameState.currentLevel = 1;
-      initLevels(20);
     }
 
     document.getElementById('level').textContent = gameState.currentLevel;
     document.getElementById('score').textContent = gameState.levelScore;
     
-    resetLevelProgress();
-    saveGameProgress().then(() => {
-      window._levelCompleted = false;
-      setLevelCompleted(false);
-      restartLevel(true);
-    });
+    // Обновляем текст цели
+    const { getLevelText } = await import('./levelGoals.js');
+    document.getElementById('goal-text').textContent = getLevelText();
+
+    const user = await getCurrentUser();
+    if (user) {
+      try {
+        await saveProgress(
+          user.id, 
+          gameState.currentLevel, 
+          gameState.lifetimeScore, 
+          gameState.coins,
+          gameState.boosters
+        );
+        
+        setTimeout(() => {
+          window._levelCompleted = false;
+        }, 1000);
+        
+      } catch (err) {
+        console.error('❌ Ошибка сохранения:', err);
+      }
+    }
+
+    // Используем handleRestart как в других модалках
+    if (typeof window.handleRestart === 'function') {
+      window.handleRestart(false);
+    }
   };
 
-  const handleRestartClick = (e) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    console.log('🔄 НАЖАТА КНОПКА RESTART');
+  // Обработчик для "Заново" (как в других модалках)
+  newRestartBtn.onclick = () => {
+    console.log('🔄 Заново в модалке');
     
     winModal.style.display = 'none';
     if (gameState.song) gameState.song.stop();
 
     gameState.levelScore = 0;
     document.getElementById('score').textContent = gameState.levelScore;
-    
-    resetLevelProgress();
-    
-    window._levelCompleted = false;
-    setLevelCompleted(false);
-    restartLevel(false);
+
+    if (typeof window.handleRestart === 'function') {
+      window.handleRestart(false);
+    }
   };
 
-  // Удаляем все старые обработчики
-  nextBtn.onclick = null;
-  nextBtn.ontouchstart = null;
-  nextBtn.onmousedown = null;
-  
-  restartBtn.onclick = null;
-  restartBtn.ontouchstart = null;
-  restartBtn.onmousedown = null;
-
-  // Добавляем новые обработчики ВСЕХ типов
-  nextBtn.addEventListener('click', handleNextClick);
-  nextBtn.addEventListener('touchstart', handleNextClick, { passive: false });
-  nextBtn.addEventListener('mousedown', handleNextClick);
-  
-  restartBtn.addEventListener('click', handleRestartClick);
-  restartBtn.addEventListener('touchstart', handleRestartClick, { passive: false });
-  restartBtn.addEventListener('mousedown', handleRestartClick);
-
-  // Дополнительная защита - вешаем обработчики на родителя
-  winModal.addEventListener('click', (e) => {
-    if (e.target === nextBtn) handleNextClick(e);
-    if (e.target === restartBtn) handleRestartClick(e);
-  });
-  
-  winModal.addEventListener('touchstart', (e) => {
-    if (e.target === nextBtn) {
-      e.preventDefault();
-      handleNextClick(e);
-    }
-    if (e.target === restartBtn) {
-      e.preventDefault();
-      handleRestartClick(e);
-    }
+  // Добавляем touch-обработчики как в piggy.js и leaderboard.js
+  newNextBtn.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    newNextBtn.onclick();
   }, { passive: false });
 
-  console.log('✅ Обработчики кнопок установлены');
+  newRestartBtn.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    newRestartBtn.onclick();
+  }, { passive: false });
 }
 
 async function saveGameProgress() {
@@ -182,8 +161,15 @@ async function saveGameProgress() {
   }
 }
 
+// Функция для получения текущего пользователя (дублируем из supabase.js чтобы избежать циклических зависимостей)
+async function getCurrentUser() {
+  const { data: { session } } = await auth.getSession();
+  return session?.user || null;
+}
+
+// Рестарт уровня (оставляем для совместимости)
 function restartLevel(resetFromDB = false) {
-  console.log('🔄 Рестарт уровня');
+  console.log('🔄 Рестарт уровня из levelComplete, resetFromDB =', resetFromDB);
   
   const currentLevel = gameState.currentLevel;
   
