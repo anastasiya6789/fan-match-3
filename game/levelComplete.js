@@ -18,22 +18,18 @@ export function showWinModal(scene) {
 
   winModal.style.display = 'block';
   
-  // Убеждаемся что модалка и кнопки кликабельны
+  // Принудительно убираем все возможные блокировки
   winModal.style.pointerEvents = 'auto';
-  winModal.style.zIndex = '10000';
+  winModal.style.zIndex = '999999';
   
-  // Пытаемся запустить музыку
+  // Музыка
   if (gameState.song) {
-    // Пробуем сразу запустить
-    gameState.song.play().catch(error => {
-      console.log('⚠️ Автовоспроизведение заблокировано');
-      
-      // Создаем большую заметную кнопку для включения музыки
+    gameState.song.play().catch(() => {
       const musicBtn = document.createElement('button');
-      musicBtn.textContent = '🔊 Включить музыку';
+      musicBtn.textContent = '🔊 Музыка';
       musicBtn.style.cssText = `
         position: fixed;
-        bottom: 30px;
+        bottom: 20px;
         left: 50%;
         transform: translateX(-50%);
         background: #FFD700;
@@ -41,159 +37,133 @@ export function showWinModal(scene) {
         padding: 15px 30px;
         border-radius: 50px;
         font-size: 18px;
-        font-weight: bold;
         border: none;
-        z-index: 10001;
+        z-index: 999999;
         cursor: pointer;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-        animation: pulse 2s infinite;
       `;
       document.body.appendChild(musicBtn);
-      
-      musicBtn.addEventListener('click', () => {
+      musicBtn.onclick = () => {
         gameState.song.play();
         musicBtn.remove();
-      });
-      
-      musicBtn.addEventListener('touchstart', (e) => {
+      };
+      musicBtn.ontouchstart = (e) => {
         e.preventDefault();
         gameState.song.play();
         musicBtn.remove();
-      });
+      };
     });
   }
 
   clearInterval(gameState.timerInterval);
   
-  // Устанавливаем обработчики напрямую, без cloneNode
-  setupWinModalButtons();
+  // Устанавливаем обработчики максимально просто
+  setupButtons();
 }
 
-function setupWinModalButtons() {
+function setupButtons() {
   const winModal = document.getElementById('win-modal');
   const nextBtn = document.getElementById('next-level-btn');
   const restartBtn = document.getElementById('restart-win-btn');
 
-  if (!nextBtn || !restartBtn) {
-    console.error('❌ Кнопки в модалке победы не найдены');
-    return;
-  }
+  if (!nextBtn || !restartBtn) return;
+
+  // Убираем все возможные атрибуты, которые могут мешать
+  [nextBtn, restartBtn].forEach(btn => {
+    btn.removeAttribute('disabled');
+    btn.style.pointerEvents = 'auto';
+    btn.style.cursor = 'pointer';
+    btn.style.opacity = '1';
+    btn.style.zIndex = '999999';
+    btn.style.position = 'relative';
+  });
+
+  // Функция для обработки клика
+  const handleNextClick = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    console.log('➡️ НАЖАТА КНОПКА NEXT');
+    
+    winModal.style.display = 'none';
+    if (gameState.song) gameState.song.stop();
+
+    gameState.lifetimeScore += gameState.levelScore;
+    gameState.levelScore = 0;
+    gameState.currentLevel++;
+    
+    if (gameState.currentLevel > 20) {
+      gameState.currentLevel = 1;
+      initLevels(20);
+    }
+
+    document.getElementById('level').textContent = gameState.currentLevel;
+    document.getElementById('score').textContent = gameState.levelScore;
+    
+    resetLevelProgress();
+    saveGameProgress().then(() => {
+      window._levelCompleted = false;
+      setLevelCompleted(false);
+      restartLevel(true);
+    });
+  };
+
+  const handleRestartClick = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    console.log('🔄 НАЖАТА КНОПКА RESTART');
+    
+    winModal.style.display = 'none';
+    if (gameState.song) gameState.song.stop();
+
+    gameState.levelScore = 0;
+    document.getElementById('score').textContent = gameState.levelScore;
+    
+    resetLevelProgress();
+    
+    window._levelCompleted = false;
+    setLevelCompleted(false);
+    restartLevel(false);
+  };
 
   // Удаляем все старые обработчики
   nextBtn.onclick = null;
   nextBtn.ontouchstart = null;
+  nextBtn.onmousedown = null;
+  
   restartBtn.onclick = null;
   restartBtn.ontouchstart = null;
+  restartBtn.onmousedown = null;
 
-  // Устанавливаем новые обработчики напрямую
-  nextBtn.onclick = async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    console.log('➡️ Нажата кнопка "Следующий уровень"');
-    
-    winModal.style.display = 'none';
-    if (gameState.song) gameState.song.stop();
+  // Добавляем новые обработчики ВСЕХ типов
+  nextBtn.addEventListener('click', handleNextClick);
+  nextBtn.addEventListener('touchstart', handleNextClick, { passive: false });
+  nextBtn.addEventListener('mousedown', handleNextClick);
+  
+  restartBtn.addEventListener('click', handleRestartClick);
+  restartBtn.addEventListener('touchstart', handleRestartClick, { passive: false });
+  restartBtn.addEventListener('mousedown', handleRestartClick);
 
-    gameState.lifetimeScore += gameState.levelScore;
-    gameState.levelScore = 0;
-    gameState.currentLevel++;
-    
-    if (gameState.currentLevel > 20) {
-      alert('🎉 Поздравляем! Вы прошли все уровни! Генерируем новые...');
-      gameState.currentLevel = 1;
-      initLevels(20);
-    }
-
-    document.getElementById('level').textContent = gameState.currentLevel;
-    document.getElementById('score').textContent = gameState.levelScore;
-    
-    resetLevelProgress();
-    await saveGameProgress();
-    
-    window._levelCompleted = false;
-    setLevelCompleted(false);
-    
-    restartLevel(true);
-  };
-
-  // Добавляем touch-обработчик для мобильных
-  nextBtn.ontouchstart = async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    console.log('👆 Нажата кнопка "Следующий уровень" (touch)');
-    
-    winModal.style.display = 'none';
-    if (gameState.song) gameState.song.stop();
-
-    gameState.lifetimeScore += gameState.levelScore;
-    gameState.levelScore = 0;
-    gameState.currentLevel++;
-    
-    if (gameState.currentLevel > 20) {
-      alert('🎉 Поздравляем! Вы прошли все уровни! Генерируем новые...');
-      gameState.currentLevel = 1;
-      initLevels(20);
-    }
-
-    document.getElementById('level').textContent = gameState.currentLevel;
-    document.getElementById('score').textContent = gameState.levelScore;
-    
-    resetLevelProgress();
-    await saveGameProgress();
-    
-    window._levelCompleted = false;
-    setLevelCompleted(false);
-    
-    restartLevel(true);
-  };
-
-  // Обработчик для кнопки "Заново"
-  restartBtn.onclick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    console.log('🔄 Нажата кнопка "Заново"');
-    
-    winModal.style.display = 'none';
-    if (gameState.song) gameState.song.stop();
-
-    gameState.levelScore = 0;
-    document.getElementById('score').textContent = gameState.levelScore;
-    
-    resetLevelProgress();
-    
-    window._levelCompleted = false;
-    setLevelCompleted(false);
-    
-    restartLevel(false);
-  };
-
-  // Touch-обработчик для кнопки "Заново"
-  restartBtn.ontouchstart = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    console.log('👆 Нажата кнопка "Заново" (touch)');
-    
-    winModal.style.display = 'none';
-    if (gameState.song) gameState.song.stop();
-
-    gameState.levelScore = 0;
-    document.getElementById('score').textContent = gameState.levelScore;
-    
-    resetLevelProgress();
-    
-    window._levelCompleted = false;
-    setLevelCompleted(false);
-    
-    restartLevel(false);
-  };
-
-  // Добавляем визуальную обратную связь
-  [nextBtn, restartBtn].forEach(btn => {
-    btn.style.cursor = 'pointer';
-    btn.style.pointerEvents = 'auto';
-    btn.style.position = 'relative';
-    btn.style.zIndex = '10001';
+  // Дополнительная защита - вешаем обработчики на родителя
+  winModal.addEventListener('click', (e) => {
+    if (e.target === nextBtn) handleNextClick(e);
+    if (e.target === restartBtn) handleRestartClick(e);
   });
+  
+  winModal.addEventListener('touchstart', (e) => {
+    if (e.target === nextBtn) {
+      e.preventDefault();
+      handleNextClick(e);
+    }
+    if (e.target === restartBtn) {
+      e.preventDefault();
+      handleRestartClick(e);
+    }
+  }, { passive: false });
+
+  console.log('✅ Обработчики кнопок установлены');
 }
 
 async function saveGameProgress() {
@@ -213,7 +183,7 @@ async function saveGameProgress() {
 }
 
 function restartLevel(resetFromDB = false) {
-  console.log('🔄 Рестарт уровня из levelComplete, resetFromDB =', resetFromDB);
+  console.log('🔄 Рестарт уровня');
   
   const currentLevel = gameState.currentLevel;
   

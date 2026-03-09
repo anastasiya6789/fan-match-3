@@ -357,7 +357,7 @@ progress::-webkit-progress-value {
   margin: auto;
 }
 
-/* Modal Styles */
+/* Modal Styles - базовые */
 .modal {
   display: none;
   position: fixed;
@@ -382,6 +382,7 @@ progress::-webkit-progress-value {
   pointer-events: auto;
 }
 
+/* Специфичные модалки */
 .win-modal {
   border-color: #4CAF50;
 }
@@ -533,7 +534,7 @@ progress::-webkit-progress-value {
   100% { background: #FFD700; transform: scale(1); }
 }
 
-/* Shop Modal - вертикальное отображение по умолчанию */
+/* Shop Modal */
 .shop-modal {
   border-color: #2196F3;
   min-width: 450px;
@@ -759,7 +760,6 @@ progress::-webkit-progress-value {
     gap: 8px;
   }
   
-  /* Увеличиваем область нажатия для кнопок */
   .modal-btn,
   .buy-btn,
   .close-btn,
@@ -881,7 +881,7 @@ progress::-webkit-progress-value {
   }
 }
 
-/* Все кнопки должны быть кликабельны */
+/* Утилиты */
 button, 
 .buy-btn, 
 .modal-btn, 
@@ -897,7 +897,7 @@ button,
   position: relative;
   z-index: 10001;
 }
-/* Убеждаемся что модалки могут скроллиться */
+
 .modal {
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch !important;
@@ -913,44 +913,55 @@ button,
   -webkit-overflow-scrolling: touch !important;
 }
 
-/* Магазин - вертикальный */
-.shop-items {
-  flex-direction: column !important;
-  align-items: center !important;
-}
-
-.shop-item {
-  width: 100% !important;
-  max-width: 280px !important;
-}
-/* Специальные стили для модалки победы */
-.win-modal {
+/* Финальные агрессивные стили для модалки победы */
+#win-modal {
+  display: none;
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  background: rgba(30, 30, 30, 0.98) !important;
+  padding: 30px !important;
+  border-radius: 20px !important;
+  text-align: center !important;
+  z-index: 999999 !important;
   pointer-events: auto !important;
-  z-index: 10000 !important;
+  touch-action: manipulation !important;
+  border: 2px solid #4CAF50 !important;
 }
 
-.win-modal button {
+#win-modal * {
+  pointer-events: auto !important;
+}
+
+#win-modal button {
+  display: inline-block !important;
   pointer-events: auto !important;
   cursor: pointer !important;
-  position: relative;
-  z-index: 10001 !important;
-  min-height: 44px;
-  min-width: 44px;
-  background: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  transition: transform 0.2s;
+  z-index: 999999 !important;
+  min-height: 48px !important;
+  min-width: 120px !important;
+  margin: 10px !important;
+  padding: 12px 24px !important;
+  font-size: 18px !important;
+  border: none !important;
+  border-radius: 8px !important;
+  background: #4CAF50 !important;
+  color: white !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  touch-action: manipulation !important;
+  position: relative !important;
+  opacity: 1 !important;
 }
 
-.win-modal button:active {
-  transform: scale(0.95);
-  opacity: 0.9;
+#win-modal .restart-btn {
+  background: #f44336 !important;
 }
 
-.win-modal .restart-btn {
-  background: #f44336;
+#win-modal button:active {
+  transform: scale(0.95) !important;
+  opacity: 0.9 !important;
 }
 
 /* Подсказка для музыки */
@@ -966,77 +977,18 @@ button,
   100% { opacity: 0.8; transform: translateX(-50%) scale(1); }
 }
 
-/* Для мобильных */
-@media (max-width: 768px) {
-  .win-modal {
-    padding: 20px 15px;
-    width: 95%;
-    max-width: 350px;
-  }
-  
-  .win-modal button {
-    width: 100%;
-    margin: 5px 0;
-    padding: 12px 20px;
-  }
-  
-  .win-modal .modal-buttons {
-    flex-direction: column;
-    gap: 8px;
-  }
-}
-/* Принудительные стили для модалки победы */
-#win-modal {
-  pointer-events: auto !important;
-  z-index: 10000 !important;
-}
-
-#win-modal button {
-  pointer-events: auto !important;
-  cursor: pointer !important;
-  z-index: 10001 !important;
-  position: relative;
-  min-height: 48px;
-  min-width: 120px;
-  background: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 18px;
-  margin: 10px;
-  padding: 12px 24px;
-  -webkit-appearance: none;
-  appearance: none;
-  touch-action: manipulation;
-}
-
-#win-modal button:active {
-  transform: scale(0.95);
-  opacity: 0.9;
-}
-
-#win-modal .restart-btn {
-  background: #f44336;
-}
-
-/* Для мобильных */
+/* Мобильные стили для модалки победы */
 @media (max-width: 768px) {
   #win-modal {
-    width: 90%;
-    padding: 20px;
+    width: 90% !important;
+    max-width: 350px !important;
+    padding: 20px !important;
   }
   
   #win-modal button {
-    width: 100%;
-    margin: 5px 0;
-    font-size: 16px;
-    padding: 15px;
+    width: 100% !important;
+    margin: 5px 0 !important;
+    font-size: 16px !important;
+    padding: 15px !important;
   }
-}
-
-/* Анимация для кнопки музыки */
-@keyframes pulse {
-  0% { transform: translateX(-50%) scale(1); }
-  50% { transform: translateX(-50%) scale(1.05); }
-  100% { transform: translateX(-50%) scale(1); }
 }
