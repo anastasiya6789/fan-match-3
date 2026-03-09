@@ -316,7 +316,8 @@ async function loadOrCreateProfile(user) {
     handleRestart(true);
   });
 
-  setupWinModalListeners();
+  // Дополнительно инициализируем UI слушатели еще раз для надежности
+  initUIListeners();
 }
 
 // Универсальная функция для рестарта с защитой
@@ -340,86 +341,6 @@ function handleRestart(resetFromDB = true) {
 
 // Делаем функцию глобальной для доступа из ui.js
 window.handleRestart = handleRestart;
-
-// Модалка победы
-function setupWinModalListeners() {
-  const winModal = document.getElementById('win-modal');
-  const nextBtn = document.getElementById('next-level-btn');
-  const restartWinBtn = document.getElementById('restart-win-btn');
-
-  const newNextBtn = nextBtn.cloneNode(true);
-  const newRestartWinBtn = restartWinBtn.cloneNode(true);
-  
-  nextBtn.parentNode.replaceChild(newNextBtn, nextBtn);
-  restartWinBtn.parentNode.replaceChild(newRestartWinBtn, restartWinBtn);
-
-  newNextBtn.onclick = async () => {
-    console.log('🎯 Следующий уровень');
-    
-    winModal.style.display = 'none';
-    if (gameState.song) gameState.song.stop();
-
-    const VISUAL_REWARD = 2000;
-    const ACTUAL_REWARD = 1000;
-    
-    if (!window._levelCompleted) {
-      window._levelCompleted = true;
-      
-      alert(`🎉 Уровень пройден! +${VISUAL_REWARD} монеток!`);
-      
-      gameState.coins += ACTUAL_REWARD;
-      gameState.lifetimeScore = (gameState.lifetimeScore || 0) + (gameState.levelScore || 0);
-      
-      console.log(`💰 Визуально: +${VISUAL_REWARD}, Реально: +${ACTUAL_REWARD}`);
-    }
-    
-    gameState.levelScore = 0;
-    gameState.currentLevel++;
-    
-    if (gameState.currentLevel > 5) {
-      alert('🎉 Игра полностью пройдена! Возвращаемся на уровень 1.');
-      gameState.currentLevel = 1;
-    }
-
-    document.getElementById('level').textContent = gameState.currentLevel;
-    document.getElementById('score').textContent = gameState.levelScore;
-    await updateGoalText();
-
-    const user = await getCurrentUser();
-    if (user) {
-      try {
-        await saveProgress(
-          user.id, 
-          gameState.currentLevel, 
-          gameState.lifetimeScore, 
-          gameState.coins,
-          gameState.boosters
-        );
-        
-        setTimeout(() => {
-          window._levelCompleted = false;
-        }, 1000);
-        
-      } catch (err) {
-        console.error('❌ Ошибка сохранения:', err);
-      }
-    }
-
-    handleRestart(false);
-  };
-
-  newRestartWinBtn.onclick = () => {
-    console.log('🔄 Заново в модалке');
-    
-    winModal.style.display = 'none';
-    if (gameState.song) gameState.song.stop();
-
-    gameState.levelScore = 0;
-    document.getElementById('score').textContent = gameState.levelScore;
-
-    handleRestart(false);
-  };
-}
 
 // Запуск Phaser
 function startPhaser() {
